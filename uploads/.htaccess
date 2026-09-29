@@ -1,0 +1,14 @@
+# Desativa execução de PHP na pasta de uploads de imagens
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
+
+# Impede execução de qualquer CGI ou script
+Options -ExecCGI -Indexes
+RemoveHandler .phtml .php .php3 .php4 .php5 .php7 .php8 .phps .cgi .pl .py

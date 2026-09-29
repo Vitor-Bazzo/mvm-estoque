@@ -1,0 +1,18 @@
+{
+  "name": "MVM Gestão de Estoque & Logística",
+  "short_name": "MVM Estoque",
+  "description": "Sistema de Controle de Armazém, Logística e Inteligência Comercial",
+  "start_url": "index.php",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#00704A",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "img/mascote_mvm.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

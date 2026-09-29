@@ -1,0 +1,205 @@
+/* =====================================================================
+   ANIMAÇÃO DO AVIÃOZINHO DE PAPEL (VENDA REGISTRADA) - SISTEMA MVM
+   ===================================================================== */
+
+.paper-plane-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Notificação elegante no topo */
+.plane-notification {
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-120%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 40px;
+  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4), 0 4px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  opacity: 0;
+  animation: planeNotifSlide 3.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 10002;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+[data-theme="dark"] .plane-notification {
+  background: linear-gradient(135deg, #065f46 0%, #0f172a 100%);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(16, 185, 129, 0.25);
+}
+
+.plane-notif-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  animation: planeIconPulse 1.2s ease-in-out infinite;
+}
+
+.plane-notif-content strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.plane-notif-content span {
+  font-size: 12px;
+  opacity: 0.92;
+  display: block;
+}
+
+/* Palco de voo do aviãozinho */
+.airplane-flight-stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.airplane-wrapper {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  top: 0;
+  left: 0;
+  transform-origin: center center;
+  animation: flyPaperAirplane 3.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+.airplane-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-15deg);
+  filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.35));
+}
+
+/* Rastro de vento e partículas */
+.airplane-wind-trail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.trail-path {
+  fill: none;
+  stroke: rgba(99, 102, 241, 0.55);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 6;
+  stroke-linecap: round;
+  animation: drawTrail 3.2s ease-out forwards;
+}
+
+[data-theme="dark"] .trail-path {
+  stroke: rgba(129, 140, 248, 0.6);
+}
+
+/* Partículas de confete / brilho */
+.confetti-particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  opacity: 0;
+  animation: popParticle 1.6s ease-out forwards;
+}
+
+/* Keyframes da Notificação */
+@keyframes planeNotifSlide {
+  0% {
+    transform: translateX(-50%) translateY(-120%);
+    opacity: 0;
+  }
+  15%, 80% {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50%) translateY(-120%);
+    opacity: 0;
+  }
+}
+
+@keyframes planeIconPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15) rotate(-8deg);
+  }
+}
+
+/* Trajetória dinâmica de voo com looping suave */
+@keyframes flyPaperAirplane {
+  0% {
+    transform: translate3d(-100px, 85vh, 0) rotate(42deg) scale(0.6);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  30% {
+    transform: translate3d(28vw, 38vh, 0) rotate(20deg) scale(1.05);
+  }
+  50% {
+    transform: translate3d(52vw, 46vh, 0) rotate(55deg) scale(0.95);
+  }
+  70% {
+    transform: translate3d(72vw, 24vh, 0) rotate(-10deg) scale(1);
+  }
+  90% {
+    transform: translate3d(92vw, 8vh, 0) rotate(-25deg) scale(0.9);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(112vw, -90px, 0) rotate(-35deg) scale(0.7);
+    opacity: 0;
+  }
+}
+
+@keyframes drawTrail {
+  0% {
+    stroke-dashoffset: 800;
+    opacity: 0.8;
+  }
+  70% {
+    stroke-dashoffset: 0;
+    opacity: 0.8;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes popParticle {
+  0% {
+    transform: scale(0) translate(0, 0);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.2) translate(var(--tx, 30px), var(--ty, -40px));
+    opacity: 0;
+  }
+}

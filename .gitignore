@@ -1,0 +1,17 @@
+# Arquivos compactados e temporários
+*.zip
+*.rar
+*.tar.gz
+*.log
+error_log
+
+# Ambientes e IDEs
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Arquivos de teste temporários e utilitários locais
+teste_smtp.php
+*.bat

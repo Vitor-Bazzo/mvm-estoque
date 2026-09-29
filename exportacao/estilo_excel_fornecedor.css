@@ -1,0 +1,30 @@
+table {
+    border-collapse: collapse;
+    font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+    font-size: 11pt;
+    width: 100%;
+}
+
+/* Azul Escuro elegante para Fornecedores */
+th {
+    background-color: #1f4e78;
+    color: #ffffff;
+    font-weight: bold;
+    text-align: left;
+    padding: 10px;
+    border: 1px solid #d9d9d9;
+}
+
+td {
+    padding: 8px;
+    border: 1px solid #e1e1e1;
+    vertical-align: middle;
+}
+
+tr:nth-child(even) {
+    background-color: #f2f6f9;
+}
+
+.text-format {
+    mso-number-format: "\@";
+}

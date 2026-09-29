@@ -1,0 +1,36 @@
+table {
+    border-collapse: collapse;
+    font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+    font-size: 11pt;
+    width: 100%;
+}
+
+/* Grafite Elegante para Produtos */
+th {
+    background-color: #44546a;
+    color: #ffffff;
+    font-weight: bold;
+    text-align: left;
+    padding: 10px;
+    border: 1px solid #d9d9d9;
+}
+
+td {
+    padding: 8px;
+    border: 1px solid #e1e1e1;
+    vertical-align: middle;
+}
+
+tr:nth-child(even) {
+    background-color: #f2f4f7;
+}
+
+/* Formatação para números de série ou códigos de barras não virarem notação científica */
+.text-format {
+    mso-number-format: "\@";
+}
+
+/* Alinhamento para colunas de preços e estoque */
+.number-format {
+    text-align: right;
+}

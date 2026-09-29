@@ -1,0 +1,24 @@
+# ==============================================================================
+# SEGURANÇA E PROTEÇÃO - MVM SISTEMA DE ESTOQUE
+# ==============================================================================
+
+# Desativa a listagem pública de diretórios (Directory Browsing)
+Options -Indexes
+
+# Bloqueia acesso direto a arquivos confidenciais, backups e scripts de banco
+<FilesMatch "\.(sql|zip|tar|gz|bak|log|env|json|lock|md)$">
+    Require all denied
+</FilesMatch>
+
+# Proteção adicional contra acesso a arquivos de configuração direta
+<Files "email_credenciais.php">
+    Require all denied
+</Files>
+
+# Cabeçalhos de Segurança HTTP
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

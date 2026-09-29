@@ -1,0 +1,178 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%">
+  <defs>
+    <!-- Gradiente de cor clássico verde esmeralda corporativo MVM -->
+    <linearGradient id="starbucksGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00704A"/>
+      <stop offset="50%" stop-color="#006241"/>
+      <stop offset="100%" stop-color="#004D34"/>
+    </linearGradient>
+
+    <!-- Sombra sutil para profundidade -->
+    <filter id="badgeShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+
+    <!-- CAMINHO DO TEXTO SUPERIOR: MVM ESTOQUE & LOGÍSTICA (Arco de 9h para 3h, pelo topo) -->
+    <path id="pathTextoSuperior" d="M 90,400 A 310,310 0 0,1 710,400" fill="none"/>
+
+    <!-- CAMINHO DO TEXTO INFERIOR: GESTÃO INTELIGENTE (Arco de 9h para 3h, pela base - sweep 0 = texto para cima) -->
+    <path id="pathTextoInferior" d="M 90,400 A 310,310 0 0,0 710,400" fill="none"/>
+  </defs>
+
+  <!-- SOMBRA EXTERNA -->
+  <circle cx="400" cy="400" r="375" fill="#000" opacity="0.2" filter="url(#badgeShadow)"/>
+
+  <!-- CÍRCULO EXTERNO PRINCIPAL -->
+  <circle cx="400" cy="400" r="370" fill="url(#starbucksGreen)"/>
+
+  <!-- BORDAS CONCÊNTRICAS EXTERNAS -->
+  <circle cx="400" cy="400" r="352" fill="none" stroke="#FFFFFF" stroke-width="4.5" opacity="0.95"/>
+  <circle cx="400" cy="400" r="340" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.6" stroke-dasharray="8 6"/>
+
+  <!-- ANEL INTERNO SEPARANDO O TEXTO DA ILUSTRAÇÃO -->
+  <circle cx="400" cy="400" r="272" fill="none" stroke="#FFFFFF" stroke-width="4.5"/>
+
+  <!-- ========================================================================= -->
+  <!-- TEXTO CIRCULAR NITIDO E CENTRALIZADO NO ANEL VERDE (SEM COLISÕES)         -->
+  <!-- ========================================================================= -->
+
+  <!-- TEXTO SUPERIOR -->
+  <text font-family="'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
+        font-size="27" 
+        font-weight="800" 
+        fill="#FFFFFF" 
+        letter-spacing="5"
+        dominant-baseline="central">
+    <textPath href="#pathTextoSuperior" startOffset="50%" text-anchor="middle">
+      MVM ESTOQUE &amp; LOGÍSTICA
+    </textPath>
+  </text>
+
+  <!-- TEXTO INFERIOR (LEGÍVEL PARA CIMA, SEM INVERSÃO) -->
+  <text font-family="'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
+        font-size="23" 
+        font-weight="700" 
+        fill="#FFFFFF" 
+        letter-spacing="6"
+        dominant-baseline="central">
+    <textPath href="#pathTextoInferior" startOffset="50%" text-anchor="middle">
+      GESTÃO INTELIGENTE
+    </textPath>
+  </text>
+
+  <!-- ESTRELAS SEPARADORAS LATERAIS NO ANEL VERDE (RAIO 310) -->
+  <!-- Estrela Esquerda (9h) -->
+  <g transform="translate(90, 400)">
+    <polygon points="0,-11 3.2,-3.5 11,-3.5 4.8,1.5 7.2,9 0,4.5 -7.2,9 -4.8,1.5 -11,-3.5 -3.2,-3.5" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Estrela Direita (3h) -->
+  <g transform="translate(710, 400)">
+    <polygon points="0,-11 3.2,-3.5 11,-3.5 4.8,1.5 7.2,9 0,4.5 -7.2,9 -4.8,1.5 -11,-3.5 -3.2,-3.5" fill="#FFFFFF"/>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- NÚCLEO DO EMBLEMA: MASCOTE FORMIGA LOGÍSTICA (SIMÉTRICA, DENTRO DO ANEL)  -->
+  <!-- ========================================================================= -->
+  <g id="mascote-formiga" transform="translate(0, 5)">
+
+    <!-- CAMADA 1: ASAS/CAUDAS LATERAIS SIMÉTRICAS ESTILIZADAS -->
+    <g fill="#FFFFFF">
+      <!-- Lado Esquerdo -->
+      <path d="M 235,375 C 220,420 225,485 262,535 C 275,510 280,480 272,440 C 262,405 248,385 235,375 Z"/>
+      <path d="M 212,430 C 202,465 208,505 235,545 C 245,525 248,495 244,465 C 235,445 224,435 212,430 Z"/>
+      <path d="M 272,550 C 292,570 320,585 348,595 C 338,575 324,555 300,542 C 286,546 277,548 272,550 Z"/>
+
+      <!-- Lado Direito -->
+      <path d="M 565,375 C 580,420 575,485 538,535 C 525,510 520,480 528,440 C 538,405 552,385 565,375 Z"/>
+      <path d="M 588,430 C 598,465 592,505 565,545 C 555,525 552,495 556,465 C 565,445 576,435 588,430 Z"/>
+      <path d="M 528,550 C 508,570 480,585 452,595 C 462,575 476,555 500,542 C 514,546 523,548 528,550 Z"/>
+    </g>
+
+    <!-- Base do abdômen -->
+    <path d="M 365,625 C 378,638 400,642 422,638 C 435,625 430,608 400,608 C 370,608 360,620 365,625 Z" fill="#FFFFFF"/>
+
+    <!-- Braços da formiga segurando a encomenda -->
+    <path d="M 315,475 C 298,458 288,430 302,402 C 310,420 328,438 348,452 L 342,485 Z" fill="#FFFFFF"/>
+    <path d="M 485,475 C 502,458 512,430 498,402 C 490,420 472,438 452,452 L 458,485 Z" fill="#FFFFFF"/>
+
+    <!-- CAIXA DE ENCOMENDA CENTRAL -->
+    <g transform="translate(400, 482)">
+      <!-- Caixa branca -->
+      <rect x="-82" y="-58" width="164" height="110" rx="8" fill="#FFFFFF" stroke="url(#starbucksGreen)" stroke-width="7"/>
+      <!-- Fita adesiva vertical -->
+      <rect x="-15" y="-58" width="30" height="110" fill="url(#starbucksGreen)" opacity="0.9"/>
+      <!-- Fita adesiva horizontal -->
+      <rect x="-82" y="-10" width="164" height="14" fill="url(#starbucksGreen)" opacity="0.9"/>
+
+      <!-- Etiqueta de código de barras -->
+      <rect x="-68" y="8" width="44" height="30" rx="3" fill="url(#starbucksGreen)"/>
+      <line x1="-62" y1="13" x2="-62" y2="33" stroke="#FFFFFF" stroke-width="2.2"/>
+      <line x1="-57" y1="13" x2="-57" y2="33" stroke="#FFFFFF" stroke-width="1.4"/>
+      <line x1="-52" y1="13" x2="-52" y2="33" stroke="#FFFFFF" stroke-width="2.6"/>
+      <line x1="-45" y1="13" x2="-45" y2="33" stroke="#FFFFFF" stroke-width="1.4"/>
+      <line x1="-40" y1="13" x2="-40" y2="33" stroke="#FFFFFF" stroke-width="1.8"/>
+      <line x1="-33" y1="13" x2="-33" y2="33" stroke="#FFFFFF" stroke-width="2.2"/>
+
+      <!-- Símbolo "Este Lado Para Cima" (Setas) -->
+      <path d="M 44,30 L 44,17 M 40,22 L 44,16 L 48,22" stroke="url(#starbucksGreen)" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M 56,30 L 56,17 M 52,22 L 56,16 L 60,22" stroke="url(#starbucksGreen)" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+      <!-- Selo de verificação de qualidade com checkmark -->
+      <circle cx="0" cy="-3" r="14" fill="#FFFFFF" stroke="url(#starbucksGreen)" stroke-width="3"/>
+      <path d="M -5,-3 L -1,1 L 6,-6" fill="none" stroke="url(#starbucksGreen)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- Gola / Pescoço do uniforme -->
+    <path d="M 372,410 C 386,423 414,423 428,410 L 432,423 C 414,437 386,437 368,423 Z" fill="#FFFFFF"/>
+
+    <!-- Cabeça da formiga -->
+    <path d="M 352,340 C 338,288 372,258 400,258 C 428,258 462,288 448,340 C 438,378 424,406 400,410 C 376,406 362,378 352,340 Z" fill="#FFFFFF"/>
+
+    <!-- Olhos expressivos e amigáveis -->
+    <g fill="url(#starbucksGreen)">
+      <!-- Olho esquerdo -->
+      <path d="M 376,325 C 371,311 385,302 392,316 C 395,323 385,330 376,325 Z"/>
+      <circle cx="384" cy="316" r="2.2" fill="#FFFFFF"/>
+
+      <!-- Olho direito -->
+      <path d="M 424,325 C 429,311 415,302 408,316 C 405,323 415,330 424,325 Z"/>
+      <circle cx="416" cy="316" r="2.2" fill="#FFFFFF"/>
+
+      <!-- Sorriso sutil -->
+      <path d="M 391,362 Q 400,373 409,362" fill="none" stroke="url(#starbucksGreen)" stroke-width="3.2" stroke-linecap="round"/>
+
+      <!-- Mandíbulas estéticas -->
+      <path d="M 380,370 C 386,379 395,382 397,376 C 392,375 385,372 380,370 Z"/>
+      <path d="M 420,370 C 414,379 405,382 403,376 C 408,375 415,372 420,370 Z"/>
+    </g>
+
+    <!-- CAPACETE DE OPERADOR DE ESTOQUE -->
+    <g id="capacete-operador">
+      <path d="M 338,268 C 338,206 462,206 462,268 C 462,272 338,272 338,268 Z" fill="#FFFFFF"/>
+      <path d="M 324,272 C 344,262 456,262 476,272 C 466,281 334,281 324,272 Z" fill="#FFFFFF"/>
+
+      <!-- Nervura central do capacete -->
+      <path d="M 395,209 C 395,206 405,206 405,209 L 403,267 L 397,267 Z" fill="url(#starbucksGreen)"/>
+
+      <!-- Emblema frontal com letra "M" -->
+      <circle cx="400" cy="242" r="15" fill="url(#starbucksGreen)"/>
+      <path d="M 393,250 L 393,235 L 400,243 L 407,235 L 407,250" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- ANTENAS DA FORMIGA -->
+    <path d="M 368,220 C 354,182 326,162 304,172 C 295,176 295,188 307,183 C 325,177 347,196 358,224 Z" fill="#FFFFFF"/>
+    <circle cx="298" cy="176" r="10" fill="#FFFFFF"/>
+    <circle cx="298" cy="176" r="4.5" fill="url(#starbucksGreen)"/>
+
+    <path d="M 432,220 C 446,182 474,162 496,172 C 505,176 505,188 493,183 C 475,177 453,196 442,224 Z" fill="#FFFFFF"/>
+    <circle cx="502" cy="176" r="10" fill="#FFFFFF"/>
+    <circle cx="502" cy="176" r="4.5" fill="url(#starbucksGreen)"/>
+
+    <!-- ESTRELA SUPERIOR SOBRE O CAPACETE -->
+    <g transform="translate(400, 168)">
+      <polygon points="0,-18 5,-5 18,-5 7,3 11,16 0,8 -11,16 -7,3 -18,-5 -5,-5" fill="#FFFFFF"/>
+    </g>
+  </g>
+
+</svg>
