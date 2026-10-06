@@ -33,13 +33,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $nomeFornecedor = trim($_POST['nomeFornecedor'] ?? '');
         $lote = trim($_POST['lote'] ?? '');
         $dataValidade = !empty($_POST['dataValidade']) ? $_POST['dataValidade'] : null;
+        $localizacao = trim($_POST['localizacao'] ?? 'A-01-01');
+        if ($localizacao === '') {
+            $localizacao = 'A-01-01';
+        }
         $imagem = salvarImagemProduto();
 
         if ($nomeProduto !== '') {
             $conexao = conectar();
-            $sql = "INSERT INTO produto (idUsuario, nomeProduto, categoria, preco, precoCusto, quantidade, estoqueMinimo, descricao, nomeFornecedor, lote, dataValidade, imagem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO produto (idUsuario, nomeProduto, categoria, preco, precoCusto, quantidade, estoqueMinimo, descricao, nomeFornecedor, lote, dataValidade, localizacao, imagem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = mysqli_prepare($conexao, $sql);
-            mysqli_stmt_bind_param($stmt, "issddiisssss", $idUsuario, $nomeProduto, $categoria, $preco, $precoCusto, $quantidade, $estoqueMinimo, $descricao, $nomeFornecedor, $lote, $dataValidade, $imagem);
+            mysqli_stmt_bind_param($stmt, "issddiissssss", $idUsuario, $nomeProduto, $categoria, $preco, $precoCusto, $quantidade, $estoqueMinimo, $descricao, $nomeFornecedor, $lote, $dataValidade, $localizacao, $imagem);
             
             if (mysqli_stmt_execute($stmt)) {
                 $_SESSION['flash_mensagem'] = ['tipo' => 'sucesso', 'texto' => "Produto '{$nomeProduto}' cadastrado com sucesso!"];
@@ -182,6 +186,11 @@ require_once "templates/header.php";
                                         <div class="cell-product-info">
                                             <strong><?= htmlspecialchars($p['nomeProduto']) ?></strong>
                                             <span><?= htmlspecialchars(mb_strimwidth($p['descricao'] ?? 'Sem descrição', 0, 45, '...')) ?></span>
+                                            <div style="margin-top: 4px;">
+                                                <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 7px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-weight: 700;" title="Endereço no armazém (WMS)">
+                                                    📍 <?= htmlspecialchars($p['localizacao'] ?? 'A-01-01') ?>
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
@@ -257,6 +266,29 @@ require_once "templates/header.php";
         <form action="produto.php" method="POST" enctype="multipart/form-data">
             <?= campoCSRF() ?>
             <div class="drawer-body">
+                <!-- CONSULTA INTELIGENTE VIA API EXTERNA (EAN-13 / GTIN) -->
+                <div class="card-api-ean" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 18px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 11.5px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+                            <span>⚡</span> Preenchimento Rápido via API (EAN-13)
+                        </span>
+                        <span style="font-size: 10px; background: rgba(99, 102, 241, 0.15); color: var(--primary); padding: 2px 7px; border-radius: 4px; font-weight: 700;">Open Food Facts Global</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" id="input-ean-api" placeholder="Digite ou bipe o código de barras (Ex: 7894900011517)..." style="flex: 1; padding: 9px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-main); font-size: 13px; font-family: 'JetBrains Mono', monospace;" maxlength="14" onkeydown="if(event.key==='Enter'){event.preventDefault(); consultarEanAPI();}">
+                        <button type="button" id="btn-consultar-ean" onclick="consultarEanAPI()" class="btn-primary" style="padding: 9px 14px; font-size: 12.5px; white-space: nowrap; gap: 6px;">
+                            <span>🔍</span> Consultar API
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px; font-size: 11px;">
+                        <span style="color: var(--text-muted); font-weight: 600;">Exemplos rápidos:</span>
+                        <button type="button" onclick="testarEan('7894900011517')" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: 600; cursor: pointer; color: var(--text-main);">🥤 Coca-Cola 2L</button>
+                        <button type="button" onclick="testarEan('7891000100103')" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: 600; cursor: pointer; color: var(--text-main);">🥛 Leite Moça</button>
+                        <button type="button" onclick="testarEan('7892840222949')" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: 600; cursor: pointer; color: var(--text-main);">🍟 Ruffles</button>
+                    </div>
+                    <div id="ean-status-msg" style="display:none; margin-top: 8px; font-size: 12px; padding: 7px 10px; border-radius: 4px;"></div>
+                </div>
+
                 <div class="form-group">
                     <label for="nomeProduto">Nome do Produto *</label>
                     <input type="text" id="nomeProduto" name="nomeProduto" placeholder="Ex: Mouse Gamer Logitech G502" required>
@@ -314,6 +346,12 @@ require_once "templates/header.php";
                 </div>
 
                 <div class="form-group">
+                    <label for="localizacao">Endereço no Armazém (WMS) *</label>
+                    <input type="text" id="localizacao" name="localizacao" value="A-01-01" placeholder="Ex: A-01-02 (Corredor A · Prat. 01 · Nível 2)" required title="Código de localização no almoxarifado para separação e picking">
+                    <small style="color: var(--text-muted); font-size: 11.5px; margin-top: 3px; display: block;">Identificação da prateleira/gôndola usada para otimizar rotas de coleta (Picking List).</small>
+                </div>
+
+                <div class="form-group">
                     <label for="descricao">Descrição Completa</label>
                     <textarea id="descricao" name="descricao" rows="3" placeholder="Detalhes, especificações e observações do item..."></textarea>
                 </div>
@@ -341,5 +379,91 @@ require_once "templates/header.php";
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="javaScript/exportarPDF.js"></script>
+
+<!-- Script de Integração com a API de Códigos de Barras EAN -->
+<script>
+    function testarEan(codigo) {
+        document.getElementById('input-ean-api').value = codigo;
+        consultarEanAPI();
+    }
+
+    async function consultarEanAPI() {
+        const input = document.getElementById('input-ean-api');
+        const btn = document.getElementById('btn-consultar-ean');
+        const msg = document.getElementById('ean-status-msg');
+        const ean = input.value.replace(/\D/g, '').trim();
+
+        if (!ean || ean.length < 7) {
+            msg.style.display = 'block';
+            msg.style.background = 'rgba(239, 68, 68, 0.1)';
+            msg.style.color = '#ef4444';
+            msg.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+            msg.textContent = 'Por favor, informe um código de barras EAN válido (mínimo 7 dígitos).';
+            return;
+        }
+
+        const textoOriginal = btn.innerHTML;
+        btn.innerHTML = '<span>⏳</span> Consultando...';
+        btn.disabled = true;
+        msg.style.display = 'none';
+
+        try {
+            const response = await fetch(`api/consulta_ean.php?ean=${ean}`);
+            const data = await response.json();
+
+            if (data.sucesso) {
+                if (data.nome) document.getElementById('nomeProduto').value = data.nome;
+                if (data.categoria) document.getElementById('categoria').value = data.categoria;
+                if (data.descricao) document.getElementById('descricao').value = data.descricao;
+                
+                // Fornecedor / Fabricante
+                const fornSelect = document.getElementById('nomeFornecedor');
+                if (data.marca && fornSelect) {
+                    let encontrou = false;
+                    for (let opt of fornSelect.options) {
+                        if (opt.value.toLowerCase().includes(data.marca.toLowerCase())) {
+                            opt.selected = true;
+                            encontrou = true;
+                            break;
+                        }
+                    }
+                    if (!encontrou) {
+                        const desc = document.getElementById('descricao');
+                        desc.value += (desc.value ? '\n' : '') + 'Fabricante/Marca: ' + data.marca;
+                    }
+                }
+
+                // Código do Lote sugerido como o próprio EAN
+                const loteInp = document.getElementById('lote');
+                if (loteInp && !loteInp.value) {
+                    loteInp.value = 'EAN-' + ean;
+                }
+
+                msg.style.display = 'block';
+                msg.style.background = 'rgba(16, 185, 129, 0.12)';
+                msg.style.color = '#10b981';
+                msg.style.border = '1px solid rgba(16, 185, 129, 0.25)';
+                msg.innerHTML = `✅ <strong>Produto localizado na API Global!</strong> Dados de "<em>${data.nome}</em>" preenchidos automaticamente.`;
+
+                document.getElementById('preco').focus();
+            } else {
+                msg.style.display = 'block';
+                msg.style.background = 'rgba(245, 158, 11, 0.12)';
+                msg.style.color = '#f59e0b';
+                msg.style.border = '1px solid rgba(245, 158, 11, 0.25)';
+                msg.textContent = data.mensagem || 'Produto não encontrado na base de dados global.';
+            }
+        } catch(err) {
+            msg.style.display = 'block';
+            msg.style.background = 'rgba(239, 68, 68, 0.1)';
+            msg.style.color = '#ef4444';
+            msg.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+            msg.textContent = 'Falha ao conectar com o serviço de consulta da API.';
+        } finally {
+            btn.innerHTML = textoOriginal;
+            btn.disabled = false;
+        }
+    }
+</script>
 
 <?php require_once "templates/footer.php"; ?>

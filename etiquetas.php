@@ -11,9 +11,9 @@ if (!isset($_SESSION['usuarioLogado'])) {
 $idUsuario = obterIdUsuarioLogado();
 $conexao = conectar();
 
-// Busca os produtos do usuário
+// Busca os produtos do usuário ordenados por localização (rota do armazém) e nome
 $produtos = [];
-$stmt = mysqli_prepare($conexao, "SELECT idProduto, nomeProduto, categoria, preco, quantidade, nomeFornecedor FROM produto WHERE idUsuario = ? ORDER BY nomeProduto ASC");
+$stmt = mysqli_prepare($conexao, "SELECT idProduto, nomeProduto, categoria, preco, quantidade, nomeFornecedor, localizacao FROM produto WHERE idUsuario = ? ORDER BY localizacao ASC, nomeProduto ASC");
 mysqli_stmt_bind_param($stmt, "i", $idUsuario);
 mysqli_stmt_execute($stmt);
 $res = mysqli_stmt_get_result($stmt);
@@ -86,6 +86,12 @@ mysqli_close($conexao);
                     <div class="etiqueta-preco-box">
                         <span class="etiqueta-moeda">R$</span>
                         <span class="etiqueta-valor"><?= number_format((float)$p['preco'], 2, ',', '.') ?></span>
+                    </div>
+
+                    <!-- Endereçamento no Armazém (WMS) -->
+                    <div class="etiqueta-endereco-box" style="display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 4px; padding: 3px 8px; margin: 5px 0; font-size: 11px;">
+                        <span style="color: #64748b; font-weight: 700; font-size: 10px; letter-spacing: 0.3px;">ENDEREÇO WMS:</span>
+                        <strong style="color: #0f172a; font-family: 'JetBrains Mono', monospace; font-size: 11px;">📍 <?= htmlspecialchars($p['localizacao'] ?? 'A-01-01') ?></strong>
                     </div>
 
                     <!-- Código de Barras Real Renderizado -->

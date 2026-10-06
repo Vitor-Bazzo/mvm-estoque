@@ -264,8 +264,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 // =========================================================================
 $conexao = conectar();
 
-// Lista produtos do usuário com preços, lotes e validade para suporte a FEFO
-$stmtProd = mysqli_prepare($conexao, "SELECT idProduto, nomeProduto, quantidade, preco, precoCusto, categoria, lote, dataValidade FROM produto WHERE idUsuario = ? ORDER BY nomeProduto ASC");
+// Lista produtos do usuário com preços, lotes e validade para suporte a FEFO e WMS
+$stmtProd = mysqli_prepare($conexao, "SELECT idProduto, nomeProduto, quantidade, preco, precoCusto, categoria, lote, dataValidade, localizacao FROM produto WHERE idUsuario = ? ORDER BY nomeProduto ASC");
 mysqli_stmt_bind_param($stmtProd, "i", $idUsuario);
 mysqli_stmt_execute($stmtProd);
 $resultado = mysqli_stmt_get_result($stmtProd);
@@ -283,15 +283,15 @@ $stmtForn = mysqli_prepare($conexao, "SELECT idFornecedor, nomeFornecedor, segme
 mysqli_stmt_bind_param($stmtForn, "i", $idUsuario);
 mysqli_stmt_execute($stmtForn);
 $resultado = mysqli_stmt_get_result($stmtForn);
-$lista_fornecedores = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
+$lista_fornecedores = mysqli_fetch_all($resultado, MYSQLI_ASSOC); 
 
-// Lista movimentos do usuário com código de pedido, lote e validade
+// Lista movimentos do usuário com código de pedido, lote, validade e endereço de armazém
 $sqlmovimento = "
 SELECT 
     movimento.idMovimento, movimento.codigoPedido, movimento.idCliente, movimento.idFornecedor, movimento.idProduto, 
     movimento.tipoMovimento, movimento.dataMovimento, movimento.dataDevolucao, 
     movimento.observacao, movimento.lote, movimento.dataValidade, movimento.motivoAjuste, movimento.valorTotal,
-    movimento.quantidade, produto.nomeProduto, produto.preco,
+    movimento.quantidade, produto.nomeProduto, produto.preco, produto.localizacao,
     cliente.nomeCliente, fornecedor.nomeFornecedor
 FROM movimento
 INNER JOIN produto ON produto.idProduto = movimento.idProduto
@@ -396,6 +396,11 @@ require_once "templates/header.php";
                                 </td>
                                 <td>
                                     <strong><?= htmlspecialchars($m['nomeProduto']) ?></strong>
+                                    <div style="margin-top: 3px;">
+                                        <span style="display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; padding: 1px 6px; background: rgba(99, 102, 241, 0.08); color: var(--primary); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-weight: 700;" title="Localização no armazém (WMS)">
+                                            📍 <?= htmlspecialchars($m['localizacao'] ?? 'A-01-01') ?>
+                                        </span>
+                                    </div>
                                     <?php if (!empty($m['lote']) || !empty($m['dataValidade'])): ?>
                                         <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
                                             <?= !empty($m['lote']) ? 'Lote: ' . htmlspecialchars($m['lote']) : '' ?>
@@ -434,12 +439,18 @@ require_once "templates/header.php";
                                 </td>
                                 <td>
                                     <div class="row-actions" style="justify-content: flex-end; gap: 6px;">
-                                        <!-- Recibo / Comprovante -->
+                                        <!-- Ordem de Separação / Picking List (WMS) e Recibo Comercial -->
                                         <?php if (!empty($m['codigoPedido'])): ?>
-                                            <a href="recibo.php?pedido=<?= urlencode($m['codigoPedido']) ?>" target="_blank" class="btn-icon" style="color: var(--primary); background: rgba(0, 112, 74, 0.12);" title="Ver Comprovante do Pedido Completo (Térmico / A4)">
+                                            <a href="recibo.php?pedido=<?= urlencode($m['codigoPedido']) ?>&modo=picking" target="_blank" class="btn-icon" style="color: #2563eb; background: rgba(37, 99, 235, 0.12);" title="Lista de Separação / Picking List (WMS)">
+                                                📋
+                                            </a>
+                                            <a href="recibo.php?pedido=<?= urlencode($m['codigoPedido']) ?>" target="_blank" class="btn-icon" style="color: var(--primary); background: rgba(0, 112, 74, 0.12);" title="Ver Comprovante Comercial (Térmico / A4)">
                                                 🧾
                                             </a>
                                         <?php else: ?>
+                                            <a href="recibo.php?id=<?= $m['idMovimento'] ?>&modo=picking" target="_blank" class="btn-icon" style="color: #2563eb; background: rgba(37, 99, 235, 0.12);" title="Ordem de Coleta / Picking List (WMS)">
+                                                📋
+                                            </a>
                                             <a href="recibo.php?id=<?= $m['idMovimento'] ?>" target="_blank" class="btn-icon" style="color: var(--primary); background: rgba(0, 112, 74, 0.12);" title="Ver Recibo da Operação">
                                                 🧾
                                             </a>
@@ -792,8 +803,8 @@ require_once "templates/header.php";
                             <select id="sel-add-produto" onchange="atualizarInfoProdutoCarrinho()">
                                 <option value="">-- Selecione o Produto --</option>
                                 <?php foreach($lista_produtos as $p): ?>
-                                    <option value="<?= $p['idProduto'] ?>" data-preco="<?= $p['preco'] ?>" data-estoque="<?= $p['quantidade'] ?>" data-nome="<?= htmlspecialchars($p['nomeProduto']) ?>" data-lote="<?= htmlspecialchars($p['lote'] ?? '') ?>" data-validade="<?= $p['dataValidade'] ? date('d/m/Y', strtotime($p['dataValidade'])) : '' ?>">
-                                        <?= htmlspecialchars($p['nomeProduto']) ?> &bull; R$ <?= number_format((float)$p['preco'], 2, ',', '.') ?> (Disp: <?= $p['quantidade'] ?> un)
+                                    <option value="<?= $p['idProduto'] ?>" data-preco="<?= $p['preco'] ?>" data-estoque="<?= $p['quantidade'] ?>" data-nome="<?= htmlspecialchars($p['nomeProduto']) ?>" data-localizacao="<?= htmlspecialchars($p['localizacao'] ?? 'A-01-01') ?>" data-lote="<?= htmlspecialchars($p['lote'] ?? '') ?>" data-validade="<?= $p['dataValidade'] ? date('d/m/Y', strtotime($p['dataValidade'])) : '' ?>">
+                                        <?= htmlspecialchars($p['nomeProduto']) ?> &bull; R$ <?= number_format((float)$p['preco'], 2, ',', '.') ?> (Disp: <?= $p['quantidade'] ?> un) [📍 <?= htmlspecialchars($p['localizacao'] ?? 'A-01-01') ?>]
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -813,7 +824,8 @@ require_once "templates/header.php";
                         </div>
 
                         <div id="carrinho-fefo-hint" class="fefo-alert-pill" style="display:none;">
-                            <span>⏳</span> <span>Dica FEFO: Lote sugerido para baixa: <strong id="carrinho-fefo-lote"></strong></span>
+                            <span>⏳</span> <span>Dica FEFO: Lote sugerido: <strong id="carrinho-fefo-lote"></strong></span>
+                            <span style="margin-left: 8px; border-left: 1px solid rgba(245, 158, 11, 0.3); padding-left: 8px;">📍 Armazém: <strong id="carrinho-wms-loc"></strong></span>
                         </div>
                     </div>
 
@@ -877,8 +889,8 @@ require_once "templates/header.php";
                         <select name="idProduto" id="idProduto" required onchange="aoMudarProdutoRapido(this)">
                             <option value="">-- Selecione o Produto --</option>
                             <?php foreach($lista_produtos as $itemproduto): ?>
-                                <option value="<?= $itemproduto['idProduto'] ?>" data-lote="<?= htmlspecialchars($itemproduto['lote'] ?? '') ?>" data-validade="<?= $itemproduto['dataValidade'] ? date('d/m/Y', strtotime($itemproduto['dataValidade'])) : '' ?>">
-                                    <?= htmlspecialchars($itemproduto['nomeProduto']) ?> (Estoque: <?= $itemproduto['quantidade'] ?> un)
+                                <option value="<?= $itemproduto['idProduto'] ?>" data-localizacao="<?= htmlspecialchars($itemproduto['localizacao'] ?? 'A-01-01') ?>" data-lote="<?= htmlspecialchars($itemproduto['lote'] ?? '') ?>" data-validade="<?= $itemproduto['dataValidade'] ? date('d/m/Y', strtotime($itemproduto['dataValidade'])) : '' ?>">
+                                    <?= htmlspecialchars($itemproduto['nomeProduto']) ?> (Estoque: <?= $itemproduto['quantidade'] ?> un) [📍 <?= htmlspecialchars($itemproduto['localizacao'] ?? 'A-01-01') ?>]
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -967,10 +979,14 @@ require_once "templates/header.php";
         const opt = sel.options[sel.selectedIndex];
         const hint = document.getElementById('carrinho-fefo-hint');
         const loteHint = document.getElementById('carrinho-fefo-lote');
+        const wmsHint = document.getElementById('carrinho-wms-loc');
 
-        if (opt && opt.dataset.lote) {
+        if (opt && opt.value) {
             hint.style.display = 'inline-flex';
-            loteHint.textContent = opt.dataset.lote + (opt.dataset.validade ? ' (Vence: ' + opt.dataset.validade + ')' : '');
+            loteHint.textContent = (opt.dataset.lote ? opt.dataset.lote : 'Padrão') + (opt.dataset.validade ? ' (Vence: ' + opt.dataset.validade + ')' : '');
+            if (wmsHint) {
+                wmsHint.textContent = opt.dataset.localizacao || 'A-01-01';
+            }
         } else {
             hint.style.display = 'none';
         }
@@ -991,6 +1007,7 @@ require_once "templates/header.php";
         const estoque = parseInt(opt.dataset.estoque || 0);
         const preco = parseFloat(opt.dataset.preco || 0);
         const nome = opt.dataset.nome || 'Produto';
+        const localizacao = opt.dataset.localizacao || 'A-01-01';
 
         const indexExistente = carrinhoItens.findIndex(item => item.idProduto === idProduto);
         const qtdJaNoCarrinho = (indexExistente >= 0) ? carrinhoItens[indexExistente].quantidade : 0;
@@ -1007,7 +1024,8 @@ require_once "templates/header.php";
                 idProduto: idProduto,
                 nome: nome,
                 preco: preco,
-                quantidade: qtd
+                quantidade: qtd,
+                localizacao: localizacao
             });
         }
 
@@ -1049,7 +1067,12 @@ require_once "templates/header.php";
 
             html += `
                 <tr>
-                    <td><strong>${item.nome}</strong></td>
+                    <td>
+                        <strong>${item.nome}</strong>
+                        <div style="font-size: 11px; margin-top: 2px;">
+                            <span style="color: var(--primary); font-family: 'JetBrains Mono', monospace; font-weight: 700;">📍 ${item.localizacao || 'A-01-01'}</span>
+                        </div>
+                    </td>
                     <td style="text-align: center; font-family: 'JetBrains Mono', monospace; font-weight: 700;">${item.quantidade} un</td>
                     <td style="text-align: right; font-family: 'JetBrains Mono', monospace;">R$ ${subtotal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                     <td style="text-align: center;">

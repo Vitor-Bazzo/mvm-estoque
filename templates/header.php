@@ -111,6 +111,12 @@ $paginaAtual = basename($_SERVER['PHP_SELF']);
                     <span class="nav-text">Fornecedores</span>
                 </a>
 
+                <span class="nav-label">Integrações</span>
+                <a href="api_docs.php" class="<?= $paginaAtual === 'api_docs.php' ? 'active' : '' ?>">
+                    <span class="nav-icon">⚡</span>
+                    <span class="nav-text">API REST &amp; WMS</span>
+                </a>
+
                 <span class="nav-label">Institucional</span>
                 <a href="mascote.php" class="<?= $paginaAtual === 'mascote.php' ? 'active' : '' ?>">
                     <span class="nav-icon">🐜</span>

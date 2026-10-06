@@ -15,7 +15,7 @@ $conexao = conectar();
 
 // 1. Lista de produtos para o seletor
 $listaProdutos = [];
-$stmtProds = mysqli_prepare($conexao, "SELECT idProduto, nomeProduto, categoria, preco, quantidade FROM produto WHERE idUsuario = ? ORDER BY nomeProduto ASC");
+$stmtProds = mysqli_prepare($conexao, "SELECT idProduto, nomeProduto, categoria, preco, quantidade, localizacao FROM produto WHERE idUsuario = ? ORDER BY nomeProduto ASC");
 if ($stmtProds) {
     mysqli_stmt_bind_param($stmtProds, "i", $idUsuario);
     mysqli_stmt_execute($stmtProds);
@@ -348,10 +348,15 @@ require_once "templates/header.php";
 
         <!-- Tabela de Movimentações Limpa -->
         <div class="table-card">
-            <div class="table-header-custom" style="padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="margin: 0; font-size: 15px; color: var(--text);">
-                    Extrato: <strong><?= htmlspecialchars($produtoAtual['nomeProduto']) ?></strong>
-                </h3>
+            <div class="table-header-custom" style="padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <h3 style="margin: 0; font-size: 15px; color: var(--text);">
+                        Extrato: <strong><?= htmlspecialchars($produtoAtual['nomeProduto']) ?></strong>
+                    </h3>
+                    <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 3px 8px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-weight: 700;" title="Localização no armazém (WMS)">
+                        📍 Armazém: <?= htmlspecialchars($produtoAtual['localizacao'] ?? 'A-01-01') ?>
+                    </span>
+                </div>
                 <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">
                     <?= count($historicoExibicao) ?> lançamentos
                 </span>

@@ -33,6 +33,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $nomeFornecedor = trim($_POST['nomeFornecedor'] ?? '');
         $lote = trim($_POST['lote'] ?? '');
         $dataValidade = !empty($_POST['dataValidade']) ? $_POST['dataValidade'] : null;
+        $localizacao = trim($_POST['localizacao'] ?? 'A-01-01');
+        if ($localizacao === '') {
+            $localizacao = 'A-01-01';
+        }
         $imagemAtual = $_POST['imagemAtual'] ?? null;
 
         $novaImagem = salvarImagemProduto();
@@ -43,9 +47,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         $conexao = conectar();
-        $sql = "UPDATE produto SET nomeProduto = ?, categoria = ?, preco = ?, precoCusto = ?, quantidade = ?, estoqueMinimo = ?, descricao = ?, nomeFornecedor = ?, lote = ?, dataValidade = ?, imagem = ? WHERE idProduto = ? AND idUsuario = ?";
+        $sql = "UPDATE produto SET nomeProduto = ?, categoria = ?, preco = ?, precoCusto = ?, quantidade = ?, estoqueMinimo = ?, descricao = ?, nomeFornecedor = ?, lote = ?, dataValidade = ?, localizacao = ?, imagem = ? WHERE idProduto = ? AND idUsuario = ?";
         $stmt = mysqli_prepare($conexao, $sql);
-        mysqli_stmt_bind_param($stmt, "ssddiisssssii", $nomeProduto, $categoria, $preco, $precoCusto, $quantidade, $estoqueMinimo, $descricao, $nomeFornecedor, $lote, $dataValidade, $imagem, $idProduto, $idUsuario);
+        mysqli_stmt_bind_param($stmt, "ssddiissssssii", $nomeProduto, $categoria, $preco, $precoCusto, $quantidade, $estoqueMinimo, $descricao, $nomeFornecedor, $lote, $dataValidade, $localizacao, $imagem, $idProduto, $idUsuario);
         
         if (mysqli_stmt_execute($stmt)) {
             $_SESSION['flash_mensagem'] = ['tipo' => 'sucesso', 'texto' => "Produto '{$nomeProduto}' atualizado com sucesso!"];
@@ -170,6 +174,12 @@ require_once "templates/header.php";
                     <label for="dataValidade">Data de Validade (Logística FEFO)</label>
                     <input type="date" id="dataValidade" name="dataValidade" value="<?= htmlspecialchars($produto['dataValidade'] ?? '') ?>">
                 </div>
+            </div>
+
+            <div class="form-group">
+                <label for="localizacao">Endereço no Armazém (WMS) *</label>
+                <input type="text" id="localizacao" name="localizacao" value="<?= htmlspecialchars($produto['localizacao'] ?? 'A-01-01') ?>" placeholder="Ex: A-01-02 (Corredor A · Prat. 01 · Nível 2)" required title="Código de localização no almoxarifado para separação e picking">
+                <small style="color: var(--text-muted); font-size: 11.5px; margin-top: 3px; display: block;">Local físico do produto no galpão/gôndola, fundamental para gerar rotas otimizadas na Lista de Separação (Picking).</small>
             </div>
 
             <div class="form-group">

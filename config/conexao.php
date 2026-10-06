@@ -63,7 +63,8 @@ function verificarEAtualizarColunas($conexao) {
         'precoCusto'     => "ALTER TABLE produto ADD COLUMN precoCusto DECIMAL(10,2) NOT NULL DEFAULT 0.00",
         'estoqueMinimo'  => "ALTER TABLE produto ADD COLUMN estoqueMinimo INT NOT NULL DEFAULT 10",
         'lote'           => "ALTER TABLE produto ADD COLUMN lote VARCHAR(50) NULL",
-        'dataValidade'   => "ALTER TABLE produto ADD COLUMN dataValidade DATE NULL"
+        'dataValidade'   => "ALTER TABLE produto ADD COLUMN dataValidade DATE NULL",
+        'localizacao'    => "ALTER TABLE produto ADD COLUMN localizacao VARCHAR(60) NOT NULL DEFAULT 'A-01-01'"
     ];
 
     $colunasMovimento = [
