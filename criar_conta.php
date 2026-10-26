@@ -30,8 +30,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 if ($resultadoCheck && mysqli_num_rows($resultadoCheck) > 0) {
                     $mensagemerro = "Este nome de usuário ou e-mail já está cadastrado no sistema.";
+                    mysqli_stmt_close($stmtCheck);
                     mysqli_close($conexao);
                 } else {
+                    mysqli_stmt_close($stmtCheck);
                     $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
                     $sqlInsert = "INSERT INTO usuario (nomeUsuario, emailUsuario, senhaUsuario) VALUES (?, ?, ?)";
                     $stmtInsert = mysqli_prepare($conexao, $sqlInsert);
@@ -39,14 +41,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     
                     if (mysqli_stmt_execute($stmtInsert)) {
                         $novoId = mysqli_insert_id($conexao);
-
-                        // Sincronização segura com outros bancos locais do XAMPP (mvm e bdmvm)
-                        $uSafe = mysqli_real_escape_string($conexao, $usuario);
-                        $eSafe = mysqli_real_escape_string($conexao, $email);
-                        $sSafe = mysqli_real_escape_string($conexao, $senhaHash);
-                        @mysqli_query($conexao, "INSERT IGNORE INTO mvm.usuario (nomeUsuario, emailUsuario, senhaUsuario) VALUES ('{$uSafe}', '{$eSafe}', '{$sSafe}')");
-                        @mysqli_query($conexao, "INSERT IGNORE INTO bdmvm.usuario (nomeUsuario, emailUsuario, senhaUsuario) VALUES ('{$uSafe}', '{$eSafe}', '{$sSafe}')");
-
+                        mysqli_stmt_close($stmtInsert);
                         mysqli_close($conexao);
 
                         // Conecta diretamente no perfil recém-criado (evita ficar preso na conta anterior)
@@ -66,6 +61,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         exit;
                     } else {
                         $mensagemerro = "Erro ao tentar cadastrar o usuário no banco de dados.";
+                        mysqli_stmt_close($stmtInsert);
                         mysqli_close($conexao);
                     }
                 }
@@ -83,7 +79,7 @@ require_once "templates/header.php";
     <div class="auth-card">
         <div class="auth-header">
             <a href="mascote.php" title="Conheça o Mascote Oficial MVM" style="display: inline-block; text-decoration: none;">
-                <img src="img/mascote_mvm.svg?v=3" alt="Mascote MVM Estoque" style="width: 84px; height: 84px; margin: 0 auto 12px; display: block; border-radius: 50%; box-shadow: 0 8px 24px rgba(0, 112, 74, 0.35); transition: transform 0.3s ease;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+                <img src="img/mascote_mvm.svg?v=5" alt="Mascote MVM Estoque" style="width: 84px; height: 84px; margin: 0 auto 12px; display: block; border-radius: 50%; box-shadow: 0 8px 24px rgba(0, 112, 74, 0.35); transition: transform 0.3s ease; object-fit: cover;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
             </a>
             <h1>Criar Nova Conta</h1>
             <p>Cadastre um novo operador no sistema MVM</p>

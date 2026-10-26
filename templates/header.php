@@ -65,7 +65,7 @@ $paginaAtual = basename($_SERVER['PHP_SELF']);
     <aside class="main-header">
         <div class="sidebar-top">
             <a href="index.php" class="logo-brand" title="MVM Estoque">
-                <img src="img/mascote_mvm.svg?v=3" alt="MVM Mascote" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; box-shadow: 0 2px 8px rgba(0, 112, 74, 0.4); flex-shrink: 0;">
+                <img src="img/mascote_mvm.svg?v=5" alt="MVM Mascote" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; box-shadow: 0 2px 8px rgba(0, 112, 74, 0.4); flex-shrink: 0;">
                 <div class="logo-text">
                     MVM Estoque
                 </div>
@@ -109,12 +109,6 @@ $paginaAtual = basename($_SERVER['PHP_SELF']);
                 <a href="fornecedor.php" class="<?= in_array($paginaAtual, ['fornecedor.php', 'fornecedor_editar.php']) ? 'active' : '' ?>">
                     <span class="nav-icon">🏢</span>
                     <span class="nav-text">Fornecedores</span>
-                </a>
-
-                <span class="nav-label">Integrações</span>
-                <a href="api_docs.php" class="<?= $paginaAtual === 'api_docs.php' ? 'active' : '' ?>">
-                    <span class="nav-icon">⚡</span>
-                    <span class="nav-text">API REST &amp; WMS</span>
                 </a>
 
                 <span class="nav-label">Institucional</span>

@@ -120,11 +120,24 @@ require_once "templates/header.php";
             <h1>Catálogo de Produtos</h1>
             <p>Gerencie o inventário físico, precificação e níveis de reposição de estoque</p>
         </div>
-        <div class="page-header-actions">
+        <div class="page-header-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
             <!-- Botão de Abertura da Gaveta Lateral -->
             <button type="button" class="btn-primary" data-open-modal="modal-novo-produto">
                 <span>➕</span> Novo Produto
             </button>
+            <a href="exportacao/relatorio_inventario_pdf.php" target="_blank" class="btn-secondary" title="Gerar Folha Oficial de Inventário Físico para Contagem em PDF">
+                <span>📋</span> Inventário (PDF)
+            </a>
+            <a href="exportacao/relatorio_inventario_excel.php" class="btn-secondary" title="Baixar planilha de Contagem de Estoque Físico com fórmulas (.xlsx)">
+                <span>📊</span> Inventário (.xlsx)
+            </a>
+            <form action="disparar_alerta.php" method="POST" style="display:inline; margin:0;" onsubmit="return confirm('Deseja enviar o relatório de estoque crítico e validades para seu e-mail agora?')">
+                <?= campoCSRF() ?>
+                <input type="hidden" name="origem" value="produto.php">
+                <button type="submit" class="btn-secondary" title="Enviar relatório gerencial de alertas por e-mail">
+                    <span>📧</span> Alertas por E-mail
+                </button>
+            </form>
             <button type="button" id="btnExportarExcel" class="btn-secondary" title="Exportar tabela atual para planilha Excel">
                 <span>📊</span> Excel
             </button>
@@ -222,13 +235,9 @@ require_once "templates/header.php";
                                         <a href="produto_editar.php?id=<?= (int)$p['idProduto'] ?>" class="btn-icon" title="Editar Produto">
                                             ✏️
                                         </a>
-                                        <form action="produto_excluir.php" method="POST" style="display:inline;" onsubmit="return confirm('Deseja realmente remover este produto permanentemente?');">
-                                            <?= campoCSRF() ?>
-                                            <input type="hidden" name="id" value="<?= (int)$p['idProduto'] ?>">
-                                            <button type="submit" class="btn-icon delete" style="border:none; cursor:pointer;" title="Excluir Produto">
-                                                🗑️
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn-icon delete" style="border:none; cursor:pointer;" onclick="abrirModalExclusao(<?= (int)$p['idProduto'] ?>, <?= htmlspecialchars(json_encode($p['nomeProduto']), ENT_QUOTES, 'UTF-8') ?>)" title="Excluir Produto">
+                                            🗑️
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -369,6 +378,65 @@ require_once "templates/header.php";
         </form>
     </div>
 </div>
+
+<!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO (Design Moderno & Seguro) -->
+<div id="modal-confirmar-exclusao" class="modal-container modal-dialog-center">
+    <div class="confirm-dialog-card">
+        <div class="confirm-dialog-icon">
+            🗑️
+        </div>
+        <h3>Excluir Produto</h3>
+        <p>Tem certeza que deseja remover este produto permanentemente do estoque?</p>
+        <div class="confirm-dialog-badge" id="confirm-dialog-item-nome">Nome do Produto</div>
+        <p class="confirm-dialog-aviso">⚠️ Esta ação não pode ser desfeita. O histórico do produto será afetado.</p>
+        
+        <form id="form-excluir-produto-modal" action="produto_excluir.php" method="POST">
+            <?= campoCSRF() ?>
+            <input type="hidden" name="id" id="input-excluir-id" value="">
+            <div class="confirm-dialog-actions">
+                <button type="button" class="btn-secondary" onclick="fecharModalExclusao()">Cancelar</button>
+                <button type="submit" class="btn-danger-confirm" id="btn-confirmar-delete">
+                    <span>🗑️</span> Sim, Excluir Produto
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function abrirModalExclusao(id, nome) {
+        const modal = document.getElementById('modal-confirmar-exclusao');
+        const inputId = document.getElementById('input-excluir-id');
+        const badgeNome = document.getElementById('confirm-dialog-item-nome');
+        
+        if (inputId) inputId.value = id;
+        if (badgeNome) badgeNome.textContent = nome || 'Produto #' + id;
+        if (modal) {
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function fecharModalExclusao() {
+        const modal = document.getElementById('modal-confirmar-exclusao');
+        if (modal) {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    }
+
+    // Fechar ao clicar no backdrop escuro fora do card
+    document.addEventListener('DOMContentLoaded', () => {
+        const modalExcluir = document.getElementById('modal-confirmar-exclusao');
+        if (modalExcluir) {
+            modalExcluir.addEventListener('click', (e) => {
+                if (e.target === modalExcluir) {
+                    fecharModalExclusao();
+                }
+            });
+        }
+    });
+</script>
 
 <!-- Scripts de Exportação Client-side -->
 <script>

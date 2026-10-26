@@ -29,7 +29,7 @@ $idUsuario = obterIdUsuarioLogado();
 if ($id > 0) {
     $conexao = conectar();
 
-    $sqlBusca = "SELECT imagem FROM produto WHERE idProduto = ? AND idUsuario = ?";
+    $sqlBusca = "SELECT nomeProduto, imagem FROM produto WHERE idProduto = ? AND idUsuario = ?";
     $stmtBusca = mysqli_prepare($conexao, $sqlBusca);
     mysqli_stmt_bind_param($stmtBusca, "ii", $id, $idUsuario);
     mysqli_stmt_execute($stmtBusca);
@@ -45,9 +45,10 @@ if ($id > 0) {
             if (!empty($produtoAtual['imagem'])) {
                 excluirImagemProduto($produtoAtual['imagem']);
             }
-            $_SESSION['flash_mensagem'] = ['tipo' => 'sucesso', 'texto' => 'Produto excluído com sucesso!'];
+            $nomeExcluido = htmlspecialchars($produtoAtual['nomeProduto']);
+            $_SESSION['flash_mensagem'] = ['tipo' => 'sucesso', 'texto' => "Produto '{$nomeExcluido}' excluído com sucesso!"];
         } else {
-            $_SESSION['flash_mensagem'] = ['tipo' => 'erro', 'texto' => 'Não foi possível excluir o produto (pode haver movimentos vinculados a ele).'];
+            $_SESSION['flash_mensagem'] = ['tipo' => 'erro', 'texto' => 'Não foi possível excluir o produto: ' . mysqli_error($conexao)];
         }
     } else {
         $_SESSION['flash_mensagem'] = ['tipo' => 'erro', 'texto' => 'Produto não encontrado ou permissão negada.'];

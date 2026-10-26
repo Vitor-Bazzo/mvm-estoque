@@ -66,6 +66,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $sucesso = true;
         $mensagemErro = '';
         $primeiroProdutoNome = '';
+        $itensComprados = [];
 
         foreach ($itens as $item) {
             $idProduto = (int)($item['idProduto'] ?? 0);
@@ -76,7 +77,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
 
             // Busca produto para conferência de preço e estoque com bloqueio
-            $stmtP = mysqli_prepare($conexao, "SELECT nomeProduto, preco, quantidade FROM produto WHERE idProduto = ? AND idUsuario = ? FOR UPDATE");
+            $stmtP = mysqli_prepare($conexao, "SELECT nomeProduto, preco, quantidade, dataValidade FROM produto WHERE idProduto = ? AND idUsuario = ? FOR UPDATE");
             mysqli_stmt_bind_param($stmtP, "ii", $idProduto, $idUsuario);
             mysqli_stmt_execute($stmtP);
             $resP = mysqli_stmt_get_result($stmtP);
@@ -107,6 +108,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $totalPedido += $subtotalItem;
             $totalItensQtd += $qtd;
 
+            $valItemFormatada = (!empty($prod['dataValidade']) && $prod['dataValidade'] !== '0000-00-00') ? date('d/m/Y', strtotime($prod['dataValidade'])) : null;
+            $itensComprados[] = [
+                'nome'          => $prod['nomeProduto'],
+                'quantidade'    => $qtd,
+                'precoUnitario' => (float)$prod['preco'],
+                'subtotal'      => $subtotalItem,
+                'validade'      => $valItemFormatada
+            ];
+
             // Insere registro de movimento vinculado ao código do pedido
             $stmtMov = mysqli_prepare($conexao, "INSERT INTO movimento (idUsuario, codigoPedido, idProduto, idCliente, tipoMovimento, quantidade, observacao, valorTotal, dataMovimento) VALUES (?, ?, ?, ?, 'SAIDA', ?, ?, ?, NOW())");
             mysqli_stmt_bind_param($stmtMov, "isiisds", $idUsuario, $codigoPedido, $idProduto, $idCliente, $qtd, $observacao, $subtotalItem);
@@ -125,9 +135,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 'total'      => $totalPedido
             ];
 
-            // E-mail opcional
+            // E-mail para cliente confirmando compra
             if ($clienteSelecionado && !empty($clienteSelecionado['email'])) {
-                enviarEmailCompra($clienteSelecionado['email'], $clienteSelecionado['nomeCliente'], "Pedido {$codigoPedido} ({$totalItensQtd} itens)", $totalItensQtd, (float)$totalPedido);
+                $validades = array_filter(array_unique(array_column($itensComprados, 'validade')));
+                $valResumo = !empty($validades) ? implode(', ', $validades) : null;
+                $dataHoraVenda = date('d/m/Y \à\s H:i');
+
+                enviarEmailCompra(
+                    $clienteSelecionado['email'],
+                    $clienteSelecionado['nomeCliente'],
+                    "Pedido {$codigoPedido}",
+                    $totalItensQtd,
+                    ($totalItensQtd > 0 ? round($totalPedido / $totalItensQtd, 2) : 0),
+                    (float)$totalPedido,
+                    $valResumo,
+                    $dataHoraVenda,
+                    $itensComprados
+                );
             }
         } else {
             mysqli_rollback($conexao);
@@ -239,7 +263,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     mysqli_stmt_execute($stmtCli);
                     $cliRow = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtCli));
                     if ($cliRow && !empty($cliRow['email'])) {
-                        enviarEmailCompra($cliRow['email'], $cliRow['nomeCliente'], $produto['nomeProduto'], $quantidade, (float)$produto['preco']);
+                        $valRaw = !empty($dataValidade) ? $dataValidade : ($produto['dataValidade'] ?? null);
+                        $valFormatada = (!empty($valRaw) && $valRaw !== '0000-00-00') ? date('d/m/Y', strtotime($valRaw)) : null;
+                        $dataHoraVenda = date('d/m/Y \à\s H:i');
+
+                        enviarEmailCompra(
+                            $cliRow['email'],
+                            $cliRow['nomeCliente'],
+                            $produto['nomeProduto'] ?? 'Produto',
+                            $quantidade,
+                            (float)($produto['preco'] ?? 0),
+                            (float)$valorTotal,
+                            $valFormatada,
+                            $dataHoraVenda
+                        );
                     }
                 }
             }

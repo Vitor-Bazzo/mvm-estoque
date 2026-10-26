@@ -100,7 +100,7 @@ require_once "templates/header.php";
     <div class="auth-card">
         <div class="auth-header">
             <a href="mascote.php" title="Conheça o Mascote Oficial MVM" style="display: inline-block; text-decoration: none;">
-                <img src="img/mascote_mvm.svg?v=3" alt="Mascote MVM Estoque" style="width: 84px; height: 84px; margin: 0 auto 12px; display: block; border-radius: 50%; box-shadow: 0 8px 24px rgba(0, 112, 74, 0.35); transition: transform 0.3s ease;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+                <img src="img/mascote_mvm.svg?v=5" alt="Mascote MVM Estoque" style="width: 84px; height: 84px; margin: 0 auto 12px; display: block; border-radius: 50%; box-shadow: 0 8px 24px rgba(0, 112, 74, 0.35); transition: transform 0.3s ease; object-fit: cover;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
             </a>
             <h1>Acesso ao Sistema</h1>
             <p>Entre com suas credenciais para gerenciar o estoque</p>

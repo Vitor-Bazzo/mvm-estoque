@@ -59,6 +59,7 @@ function verificarEAtualizarColunas($conexao) {
     $executado = true;
 
     $colunasProduto = [
+        'idUsuario'      => "ALTER TABLE produto ADD COLUMN idUsuario INT NOT NULL DEFAULT 1",
         'idFornecedor'   => "ALTER TABLE produto ADD COLUMN idFornecedor INT NULL",
         'precoCusto'     => "ALTER TABLE produto ADD COLUMN precoCusto DECIMAL(10,2) NOT NULL DEFAULT 0.00",
         'estoqueMinimo'  => "ALTER TABLE produto ADD COLUMN estoqueMinimo INT NOT NULL DEFAULT 10",
@@ -68,6 +69,7 @@ function verificarEAtualizarColunas($conexao) {
     ];
 
     $colunasMovimento = [
+        'idUsuario'      => "ALTER TABLE movimento ADD COLUMN idUsuario INT NOT NULL DEFAULT 1",
         'codigoPedido'   => "ALTER TABLE movimento ADD COLUMN codigoPedido VARCHAR(50) NULL",
         'lote'           => "ALTER TABLE movimento ADD COLUMN lote VARCHAR(50) NULL",
         'dataValidade'   => "ALTER TABLE movimento ADD COLUMN dataValidade DATE NULL",
@@ -75,30 +77,38 @@ function verificarEAtualizarColunas($conexao) {
         'motivoAjuste'   => "ALTER TABLE movimento ADD COLUMN motivoAjuste VARCHAR(100) NULL"
     ];
 
-    $res = @mysqli_query($conexao, "SHOW COLUMNS FROM produto");
-    if ($res) {
-        $existentes = [];
-        while ($col = mysqli_fetch_assoc($res)) {
-            $existentes[strtolower($col['Field'])] = true;
-        }
-        foreach ($colunasProduto as $col => $sqlAlter) {
-            if (!isset($existentes[strtolower($col)])) {
-                @mysqli_query($conexao, $sqlAlter);
+    try {
+        $res = @mysqli_query($conexao, "SHOW COLUMNS FROM produto");
+        if ($res) {
+            $existentes = [];
+            while ($col = mysqli_fetch_assoc($res)) {
+                $existentes[strtolower($col['Field'])] = true;
+            }
+            foreach ($colunasProduto as $col => $sqlAlter) {
+                if (!isset($existentes[strtolower($col)])) {
+                    @mysqli_query($conexao, $sqlAlter);
+                }
             }
         }
+    } catch (Throwable $e) {
+        // Tabela ainda não criada ou sem permissão
     }
 
-    $resMov = @mysqli_query($conexao, "SHOW COLUMNS FROM movimento");
-    if ($resMov) {
-        $existentesMov = [];
-        while ($col = mysqli_fetch_assoc($resMov)) {
-            $existentesMov[strtolower($col['Field'])] = true;
-        }
-        foreach ($colunasMovimento as $col => $sqlAlter) {
-            if (!isset($existentesMov[strtolower($col)])) {
-                @mysqli_query($conexao, $sqlAlter);
+    try {
+        $resMov = @mysqli_query($conexao, "SHOW COLUMNS FROM movimento");
+        if ($resMov) {
+            $existentesMov = [];
+            while ($col = mysqli_fetch_assoc($resMov)) {
+                $existentesMov[strtolower($col['Field'])] = true;
+            }
+            foreach ($colunasMovimento as $col => $sqlAlter) {
+                if (!isset($existentesMov[strtolower($col)])) {
+                    @mysqli_query($conexao, $sqlAlter);
+                }
             }
         }
+    } catch (Throwable $e) {
+        // Tabela ainda não criada ou sem permissão
     }
 }
 

@@ -34,11 +34,17 @@ $dadosBI = obterDadosDashboardBI();
                     </div>
                 </div>
 
-                <div class="pbi-header-actions">
+                <div class="pbi-header-actions" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                     <div class="pbi-tag">
                         <span class="pbi-tag-pulse"></span>
-                        Atualizado em tempo real (<?= date('d/m/Y H:i') ?>)
+                        Atualizado (<?= date('d/m/Y H:i') ?>)
                     </div>
+                    <a href="exportacao/relatorio_balanco_pdf.php" target="_blank" class="pbi-btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #ffffff; text-decoration: none;" title="Gerar Balanço Mensal Oficial em PDF">
+                        <span>📑</span> Balanço (PDF)
+                    </a>
+                    <a href="exportacao/relatorio_inventario_pdf.php" target="_blank" class="pbi-btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #ffffff; text-decoration: none;" title="Folha Oficial de Inventário Físico para Auditoria">
+                        <span>📋</span> Inventário (PDF)
+                    </a>
                     <a href="movimento.php" class="pbi-btn pbi-btn-primary">
                         <span>➕</span> Registrar Nova Venda
                     </a>
@@ -67,7 +73,14 @@ $dadosBI = obterDadosDashboardBI();
                             </div>
                         </div>
 
-                        <div class="pbi-stock-alert-actions">
+                        <div class="pbi-stock-alert-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <form action="disparar_alerta.php" method="POST" style="display:inline; margin:0;" onsubmit="return confirm('Deseja enviar o relatório consolidado de alertas para seu e-mail agora?')">
+                                <?= campoCSRF() ?>
+                                <input type="hidden" name="origem" value="index.php">
+                                <button type="submit" class="pbi-btn" style="background:#00704A; color:#ffffff; border:none; cursor:pointer;" title="Enviar relatório gerencial de alertas por e-mail">
+                                    <span>📧</span> Notificar Gestor por E-mail
+                                </button>
+                            </form>
                             <a href="movimento.php" class="pbi-btn pbi-btn-stock-entry" title="Registrar entrada de produtos para repor estoque">
                                 <span>📥</span> Repor Estoque
                             </a>

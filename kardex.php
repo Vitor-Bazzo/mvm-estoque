@@ -269,7 +269,19 @@ require_once "templates/header.php";
             <h1>Ficha Kardex</h1>
             <p>Histórico de movimentações e saldo em estoque do produto</p>
         </div>
-        <div class="page-header-actions">
+        <div class="page-header-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <a href="exportacao/relatorio_kardex_pdf.php?idProduto=<?= $idProdutoSelecionado ?>&dataInicio=<?= urlencode($dataInicio) ?>&dataFim=<?= urlencode($dataFim) ?>" target="_blank" class="btn-secondary" title="Gerar Livro Oficial Kardex em PDF">
+                <span>📄</span> Kardex (PDF)
+            </a>
+            <a href="exportacao/relatorio_kardex_excel.php?idProduto=<?= $idProdutoSelecionado ?>&dataInicio=<?= urlencode($dataInicio) ?>&dataFim=<?= urlencode($dataFim) ?>" class="btn-secondary" title="Exportar Kardex em planilha Excel (.xlsx)">
+                <span>📊</span> Kardex (.xlsx)
+            </a>
+            <a href="exportacao/relatorio_balanco_pdf.php" target="_blank" class="btn-secondary" title="Gerar Balanço Mensal Oficial em PDF">
+                <span>📑</span> Balanço (PDF)
+            </a>
+            <a href="exportacao/relatorio_balanco_excel.php" class="btn-secondary" title="Exportar Balanço Mensal em planilha Excel (.xlsx)">
+                <span>📈</span> Balanço (.xlsx)
+            </a>
             <button type="button" onclick="window.print()" class="btn-secondary" title="Imprimir">
                 <span>🖨️</span> Imprimir
             </button>
