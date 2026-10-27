@@ -1,10 +1,10 @@
 <?php
+require_once __DIR__ . "/../config/conexao.php";
 $titulo_pagina = "Documentação & Teste de APIs - MVM Estoque";
-require_once "templates/header.php";
-require_once "config/conexao.php";
+require_once __DIR__ . "/../templates/header.php";
 
 $idUsuario = obterIdUsuarioLogado();
-$baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]" . dirname($_SERVER['PHP_SELF']);
+$baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]" . obterBaseUrl();
 $tokenExemplo = 'mvm_live_token_77a89b42';
 ?>
 
@@ -265,7 +265,7 @@ $tokenExemplo = 'mvm_live_token_77a89b42';
                 <span class="http-badge http-get">GET</span>
                 <span class="route-path">/api/consulta_ean.php?ean={codigo}</span>
             </div>
-            <a href="produto.php" class="btn-primary" style="text-decoration:none; font-size:12px; padding: 7px 12px;">
+            <a href="<?= url('modulos/produtos/produto.php') ?>" class="btn-primary" style="text-decoration:none; font-size:12px; padding: 7px 12px;">
                 <span>📦</span> Ver no Cadastro de Produtos
             </a>
         </div>
@@ -291,7 +291,7 @@ $tokenExemplo = 'mvm_live_token_77a89b42';
         out.textContent = '// Enviando requisição GET para /api/v1/estoque.php...';
 
         try {
-            const resp = await fetch('api/v1/estoque.php?token=mvm_demo');
+            const resp = await fetch('<?= url('api/v1/estoque.php?token=mvm_demo') ?>');
             const data = await resp.json();
             out.textContent = JSON.stringify(data, null, 2);
         } catch (err) {
@@ -305,7 +305,7 @@ $tokenExemplo = 'mvm_live_token_77a89b42';
         out.textContent = '// Enviando requisição POST para registrar baixa de 1 unidade...';
 
         try {
-            const resp = await fetch('api/v1/estoque.php?token=mvm_demo', {
+            const resp = await fetch('<?= url('api/v1/estoque.php?token=mvm_demo') ?>', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -325,4 +325,4 @@ $tokenExemplo = 'mvm_live_token_77a89b42';
     }
 </script>
 
-<?php require_once "templates/footer.php"; ?>
+<?php require_once __DIR__ . "/../templates/footer.php"; ?>

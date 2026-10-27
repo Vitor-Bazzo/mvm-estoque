@@ -2,7 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require_once __DIR__ . "/config/conexao.php";
+require_once __DIR__ . "/../../config/conexao.php";
 
 $titulopagina = "MVM - Acesso ao Sistema";
 $mensagemerro = "";
@@ -58,7 +58,7 @@ if ($tempoBloqueio > time()) {
                             $_SESSION['idUsuario'] = $entrar['idUsuario'];
                             $_SESSION['roleUsuario'] = (strtolower($entrar['nomeUsuario']) === 'admin' || (isset($entrar['emailUsuario']) && stripos($entrar['emailUsuario'], 'admin') !== false)) ? 'Administrador' : 'Operador';
                             
-                            header('Location: index.php');
+                            header('Location: ' . url('index.php'));
                             exit;
                         } else {
                             $tentativas = ($_SESSION['login_tentativas'] ?? 0) + 1;
@@ -93,14 +93,14 @@ if ($tempoBloqueio > time()) {
     }
 }
 
-require_once "templates/header.php";
+require_once __DIR__ . "/../../templates/header.php";
 ?>
 
 <div class="auth-wrapper">
     <div class="auth-card">
         <div class="auth-header">
-            <a href="mascote.php" title="Conheça o Mascote Oficial MVM" style="display: inline-block; text-decoration: none;">
-                <img src="img/mascote_mvm.svg?v=5" alt="Mascote MVM Estoque" style="width: 84px; height: 84px; margin: 0 auto 12px; display: block; border-radius: 50%; box-shadow: 0 8px 24px rgba(0, 112, 74, 0.35); transition: transform 0.3s ease; object-fit: cover;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+            <a href="<?= url('docs/mascote.php') ?>" title="Conheça o Mascote Oficial MVM" style="display: inline-block; text-decoration: none;">
+                <img src="<?= url('img/mascote_mvm.svg?v=5') ?>" alt="Mascote MVM Estoque" style="width: 84px; height: 84px; margin: 0 auto 12px; display: block; border-radius: 50%; box-shadow: 0 8px 24px rgba(0, 112, 74, 0.35); transition: transform 0.3s ease; object-fit: cover;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
             </a>
             <h1>Acesso ao Sistema</h1>
             <p>Entre com suas credenciais para gerenciar o estoque</p>
@@ -137,4 +137,4 @@ require_once "templates/header.php";
     </div>
 </div>
 
-<?php require_once "templates/footer.php"; ?>
+<?php require_once __DIR__ . "/../../templates/footer.php"; ?>

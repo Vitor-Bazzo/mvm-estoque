@@ -2,12 +2,12 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require_once "config/conexao.php";
-require_once "config/upload.php";
+require_once __DIR__ . "/../../config/conexao.php";
+require_once __DIR__ . "/../../config/upload.php";
 
 // Verificação de autenticação e proteção contra CSRF
 if (!isset($_SESSION['usuarioLogado'])) {
-    header('Location: login.php');
+    header('Location: ' . url('modulos/auth/login.php'));
     exit;
 }
 

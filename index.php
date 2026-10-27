@@ -45,7 +45,7 @@ $dadosBI = obterDadosDashboardBI();
                     <a href="exportacao/relatorio_inventario_pdf.php" target="_blank" class="pbi-btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #ffffff; text-decoration: none;" title="Folha Oficial de Inventário Físico para Auditoria">
                         <span>📋</span> Inventário (PDF)
                     </a>
-                    <a href="movimento.php" class="pbi-btn pbi-btn-primary">
+                    <a href="<?= url('modulos/movimentos/movimento.php') ?>" class="pbi-btn pbi-btn-primary">
                         <span>➕</span> Registrar Nova Venda
                     </a>
                 </div>
@@ -74,17 +74,17 @@ $dadosBI = obterDadosDashboardBI();
                         </div>
 
                         <div class="pbi-stock-alert-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
-                            <form action="disparar_alerta.php" method="POST" style="display:inline; margin:0;" onsubmit="return confirm('Deseja enviar o relatório consolidado de alertas para seu e-mail agora?')">
+                            <form action="<?= url('scripts/disparar_alerta.php') ?>" method="POST" style="display:inline; margin:0;" onsubmit="return confirm('Deseja enviar o relatório consolidado de alertas para seu e-mail agora?')">
                                 <?= campoCSRF() ?>
-                                <input type="hidden" name="origem" value="index.php">
+                                <input type="hidden" name="origem" value="<?= url('index.php') ?>">
                                 <button type="submit" class="pbi-btn" style="background:#00704A; color:#ffffff; border:none; cursor:pointer;" title="Enviar relatório gerencial de alertas por e-mail">
                                     <span>📧</span> Notificar Gestor por E-mail
                                 </button>
                             </form>
-                            <a href="movimento.php" class="pbi-btn pbi-btn-stock-entry" title="Registrar entrada de produtos para repor estoque">
+                            <a href="<?= url('modulos/movimentos/movimento.php') ?>" class="pbi-btn pbi-btn-stock-entry" title="Registrar entrada de produtos para repor estoque">
                                 <span>📥</span> Repor Estoque
                             </a>
-                            <a href="produto.php" class="pbi-btn pbi-btn-stock-catalog" title="Ver catálogo de produtos">
+                            <a href="<?= url('modulos/produtos/produto.php') ?>" class="pbi-btn pbi-btn-stock-catalog" title="Ver catálogo de produtos">
                                 <span>📦</span> Catálogo
                             </a>
                         </div>
@@ -167,7 +167,7 @@ $dadosBI = obterDadosDashboardBI();
                         </div>
 
                         <div class="pbi-stock-alert-actions">
-                            <a href="movimento.php" class="pbi-btn pbi-btn-primary" style="background: #d97706;" title="Priorizar saída comercial destes itens">
+                            <a href="<?= url('modulos/movimentos/movimento.php') ?>" class="pbi-btn pbi-btn-primary" style="background: #d97706;" title="Priorizar saída comercial destes itens">
                                 <span>🚀</span> Priorizar Saída
                             </a>
                         </div>
@@ -441,7 +441,7 @@ $dadosBI = obterDadosDashboardBI();
                                                     <span>💬</span> Pedir no WhatsApp
                                                 </a>
                                             <?php else: ?>
-                                                <a href="fornecedor.php" class="btn-secondary" style="padding: 6px 10px; font-size: 11.5px; text-decoration: none;">
+                                                <a href="<?= url('modulos/fornecedores/fornecedor.php') ?>" class="btn-secondary" style="padding: 6px 10px; font-size: 11.5px; text-decoration: none;">
                                                     Vincular Contato
                                                 </a>
                                             <?php endif; ?>
@@ -542,7 +542,7 @@ $dadosBI = obterDadosDashboardBI();
                     ⚡ Atalhos de Gestão Operacional
                 </h3>
                 <div class="pbi-quick-nav">
-                    <a href="produto.php" class="pbi-nav-card">
+                    <a href="<?= url('modulos/produtos/produto.php') ?>" class="pbi-nav-card">
                         <div class="pbi-nav-icon">📦</div>
                         <div class="pbi-nav-text">
                             <strong>Produtos</strong>
@@ -550,7 +550,7 @@ $dadosBI = obterDadosDashboardBI();
                         </div>
                     </a>
 
-                    <a href="cliente.php" class="pbi-nav-card">
+                    <a href="<?= url('modulos/clientes/cliente.php') ?>" class="pbi-nav-card">
                         <div class="pbi-nav-icon">👥</div>
                         <div class="pbi-nav-text">
                             <strong>Clientes</strong>
@@ -558,7 +558,7 @@ $dadosBI = obterDadosDashboardBI();
                         </div>
                     </a>
 
-                    <a href="movimento.php" class="pbi-nav-card">
+                    <a href="<?= url('modulos/movimentos/movimento.php') ?>" class="pbi-nav-card">
                         <div class="pbi-nav-icon">💳</div>
                         <div class="pbi-nav-text">
                             <strong>Histórico de Vendas</strong>
@@ -566,7 +566,7 @@ $dadosBI = obterDadosDashboardBI();
                         </div>
                     </a>
 
-                    <a href="fornecedor.php" class="pbi-nav-card">
+                    <a href="<?= url('modulos/fornecedores/fornecedor.php') ?>" class="pbi-nav-card">
                         <div class="pbi-nav-icon">🏢</div>
                         <div class="pbi-nav-text">
                             <strong>Fornecedores</strong>
@@ -582,7 +582,7 @@ $dadosBI = obterDadosDashboardBI();
         <script>
             const dadosBI = <?= json_encode($dadosBI, JSON_UNESCAPED_UNICODE | JSON_NUMERIC_CHECK); ?>;
         </script>
-        <script src="javaScript/dashboard_bi.js"></script>
+        <script src="<?= url('javaScript/dashboard_bi.js') ?>"></script>
 
     <?php else: ?>
         <!-- Conteúdo para VISITANTE NÃO LOGADO -->
@@ -592,7 +592,7 @@ $dadosBI = obterDadosDashboardBI();
             <p style="color: var(--muted); font-size: 16px; max-width: 500px; margin: 0 auto 24px;">
                 Plataforma de gestão comercial de estoque e inteligência de vendas estilo Power BI.
             </p>
-            <a href="login.php" class="cta-button" style="padding: 14px 28px; font-size: 15px;">Acessar o Sistema (Login)</a>
+            <a href="<?= url('modulos/auth/login.php') ?>" class="cta-button" style="padding: 14px 28px; font-size: 15px;">Acessar o Sistema (Login)</a>
         </div>
     <?php endif; ?>
 </div>

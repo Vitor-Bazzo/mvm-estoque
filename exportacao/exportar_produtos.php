@@ -7,7 +7,7 @@ require_once __DIR__ . "/../config/conexao.php";
 
 // Verificação de autenticação
 if (!isset($_SESSION['usuarioLogado'])) {
-    header('Location: ../login.php');
+    header('Location: ' . url('modulos/auth/login.php'));
     exit;
 }
 

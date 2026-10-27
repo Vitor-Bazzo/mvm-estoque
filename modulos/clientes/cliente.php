@@ -3,12 +3,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+require_once __DIR__ . "/../../config/conexao.php";
+
 if (!isset($_SESSION['usuarioLogado'])) {
-    header('Location: login.php');
+    header('Location: ' . url('modulos/auth/login.php'));
     exit;
 }
-
-require_once "config/conexao.php";
 
 $idUsuario = obterIdUsuarioLogado();
 
@@ -75,7 +75,7 @@ if ($resultado && mysqli_num_rows($resultado) > 0) {
 mysqli_close($conexao);
 
 $titulo_pagina = "MVM - Carteira de Clientes";
-require_once "templates/header.php";
+require_once __DIR__ . "/../../templates/header.php";
 ?>
 
 <div class="page-container">
@@ -264,9 +264,9 @@ require_once "templates/header.php";
     const clientesData = <?= json_encode($clientes, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="javaScript/exportarexcel.js"></script>
+<script src="<?= url('javaScript/exportarexcel.js') ?>"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script src="javaScript/exportarPDF.js"></script>
+<script src="<?= url('javaScript/exportarPDF.js') ?>"></script>
 
-<?php require_once "templates/footer.php"; ?>
+<?php require_once __DIR__ . "/../../templates/footer.php"; ?>

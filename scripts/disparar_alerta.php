@@ -3,17 +3,17 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-require_once __DIR__ . "/config/conexao.php";
-require_once __DIR__ . "/config/alertas_estoque.php";
+require_once __DIR__ . "/../config/conexao.php";
+require_once __DIR__ . "/../config/alertas_estoque.php";
 
 // Apenas usuários autenticados
 if (!isset($_SESSION['usuarioLogado'])) {
-    header('Location: login.php');
+    header('Location: ' . url('modulos/auth/login.php'));
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: index.php');
+    header('Location: ' . url('index.php'));
     exit;
 }
 
@@ -22,7 +22,7 @@ if (!validarTokenCSRF()) {
         'tipo'  => 'erro',
         'texto' => 'Token de segurança inválido. Tente novamente.'
     ];
-    header('Location: index.php');
+    header('Location: ' . url('index.php'));
     exit;
 }
 
@@ -43,6 +43,6 @@ if ($resultado['sucesso']) {
     ];
 }
 
-$origem = $_POST['origem'] ?? 'index.php';
+$origem = !empty($_POST['origem']) ? $_POST['origem'] : url('index.php');
 header("Location: {$origem}");
 exit;

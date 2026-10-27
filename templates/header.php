@@ -14,35 +14,35 @@ $paginaAtual = basename($_SERVER['PHP_SELF']);
     <title><?= htmlspecialchars($paginaTitulo) ?></title>
     
     <!-- Favicon Oficial com Mascote MVM -->
-    <link rel="icon" type="image/svg+xml" href="img/mascote_mvm.svg">
+    <link rel="icon" type="image/svg+xml" href="<?= url('img/mascote_mvm.svg') ?>">
 
     <!-- Configurações PWA (Instalável no Celular/Desktop) -->
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="<?= url('manifest.json') ?>">
     <meta name="theme-color" content="#00704A">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MVM Estoque">
-    <link rel="apple-touch-icon" href="img/mascote_mvm.svg">
+    <link rel="apple-touch-icon" href="<?= url('img/mascote_mvm.svg') ?>">
 
     <!-- Script de Inicialização Instantânea do Tema -->
-    <script src="javaScript/theme.js"></script>
+    <script src="<?= url('javaScript/theme.js') ?>"></script>
 
     <!-- Folhas de Estilo -->
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/powerbi.css">
-    <link rel="stylesheet" href="css/paper_airplane.css">
-    <link rel="stylesheet" href="css/truck_animation.css">
+    <link rel="stylesheet" href="<?= url('css/style.css') ?>">
+    <link rel="stylesheet" href="<?= url('css/powerbi.css') ?>">
+    <link rel="stylesheet" href="<?= url('css/paper_airplane.css') ?>">
+    <link rel="stylesheet" href="<?= url('css/truck_animation.css') ?>">
 
     <!-- ApexCharts e Animações -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <script src="javaScript/paper_airplane.js"></script>
-    <script src="javaScript/truck_animation.js"></script>
+    <script src="<?= url('javaScript/paper_airplane.js') ?>"></script>
+    <script src="<?= url('javaScript/truck_animation.js') ?>"></script>
 
     <!-- Registro do Service Worker PWA -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(err => {
+                navigator.serviceWorker.register('<?= url('sw.js') ?>').catch(err => {
                     console.log('ServiceWorker registration failed: ', err);
                 });
             });
@@ -64,8 +64,8 @@ $paginaAtual = basename($_SERVER['PHP_SELF']);
     <!-- SIDEBAR MINIMALISTA INTELIGENTE (ESTILO LINEAR) -->
     <aside class="main-header">
         <div class="sidebar-top">
-            <a href="index.php" class="logo-brand" title="MVM Estoque">
-                <img src="img/mascote_mvm.svg?v=5" alt="MVM Mascote" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; box-shadow: 0 2px 8px rgba(0, 112, 74, 0.4); flex-shrink: 0;">
+            <a href="<?= url('index.php') ?>" class="logo-brand" title="MVM Estoque">
+                <img src="<?= url('img/mascote_mvm.svg?v=5') ?>" alt="MVM Mascote" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; box-shadow: 0 2px 8px rgba(0, 112, 74, 0.4); flex-shrink: 0;">
                 <div class="logo-text">
                     MVM Estoque
                 </div>
@@ -77,52 +77,52 @@ $paginaAtual = basename($_SERVER['PHP_SELF']);
 
         <nav>
             <span class="nav-label">Visão Geral</span>
-            <a href="index.php" class="<?= in_array($paginaAtual, ['index.php', 'dashboard.php']) ? 'active' : '' ?>">
+            <a href="<?= url('index.php') ?>" class="<?= in_array($paginaAtual, ['index.php', 'dashboard.php']) ? 'active' : '' ?>">
                 <span class="nav-icon">📊</span>
                 <span class="nav-text">Dashboard BI</span>
             </a>
 
             <?php if (isset($_SESSION['usuarioLogado'])): ?>
                 <span class="nav-label">Operações</span>
-                <a href="produto.php" class="<?= in_array($paginaAtual, ['produto.php', 'produto_editar.php']) ? 'active' : '' ?>">
+                <a href="<?= url('modulos/produtos/produto.php') ?>" class="<?= in_array($paginaAtual, ['produto.php', 'produto_editar.php']) ? 'active' : '' ?>">
                     <span class="nav-icon">📦</span>
                     <span class="nav-text">Catálogo de Produtos</span>
                 </a>
-                <a href="movimento.php" class="<?= in_array($paginaAtual, ['movimento.php', 'movimento_devolucao.php']) ? 'active' : '' ?>">
+                <a href="<?= url('modulos/movimentos/movimento.php') ?>" class="<?= in_array($paginaAtual, ['movimento.php', 'movimento_devolucao.php']) ? 'active' : '' ?>">
                     <span class="nav-icon">↔️</span>
                     <span class="nav-text">Vendas &amp; Movimento</span>
                 </a>
-                <a href="kardex.php" class="<?= $paginaAtual === 'kardex.php' ? 'active' : '' ?>">
+                <a href="<?= url('modulos/relatorios/kardex.php') ?>" class="<?= $paginaAtual === 'kardex.php' ? 'active' : '' ?>">
                     <span class="nav-icon">📜</span>
                     <span class="nav-text">Ficha Kardex</span>
                 </a>
-                <a href="etiquetas.php" class="<?= $paginaAtual === 'etiquetas.php' ? 'active' : '' ?>">
+                <a href="<?= url('modulos/relatorios/etiquetas.php') ?>" class="<?= $paginaAtual === 'etiquetas.php' ? 'active' : '' ?>">
                     <span class="nav-icon">🏷️</span>
                     <span class="nav-text">Etiquetas &amp; Barras</span>
                 </a>
 
                 <span class="nav-label">Contatos</span>
-                <a href="cliente.php" class="<?= in_array($paginaAtual, ['cliente.php', 'cliente_editar.php']) ? 'active' : '' ?>">
+                <a href="<?= url('modulos/clientes/cliente.php') ?>" class="<?= in_array($paginaAtual, ['cliente.php', 'cliente_editar.php']) ? 'active' : '' ?>">
                     <span class="nav-icon">👥</span>
                     <span class="nav-text">Carteira de Clientes</span>
                 </a>
-                <a href="fornecedor.php" class="<?= in_array($paginaAtual, ['fornecedor.php', 'fornecedor_editar.php']) ? 'active' : '' ?>">
+                <a href="<?= url('modulos/fornecedores/fornecedor.php') ?>" class="<?= in_array($paginaAtual, ['fornecedor.php', 'fornecedor_editar.php']) ? 'active' : '' ?>">
                     <span class="nav-icon">🏢</span>
                     <span class="nav-text">Fornecedores</span>
                 </a>
 
                 <span class="nav-label">Institucional</span>
-                <a href="mascote.php" class="<?= $paginaAtual === 'mascote.php' ? 'active' : '' ?>">
+                <a href="<?= url('docs/mascote.php') ?>" class="<?= $paginaAtual === 'mascote.php' ? 'active' : '' ?>">
                     <span class="nav-icon">🐜</span>
                     <span class="nav-text">Mascote Oficial</span>
                 </a>
             <?php else: ?>
                 <span class="nav-label">Acesso</span>
-                <a href="login.php" class="<?= $paginaAtual === 'login.php' ? 'active' : '' ?>">
+                <a href="<?= url('modulos/auth/login.php') ?>" class="<?= $paginaAtual === 'login.php' ? 'active' : '' ?>">
                     <span class="nav-icon">🔐</span>
                     <span class="nav-text">Entrar no Sistema</span>
                 </a>
-                <a href="mascote.php" class="<?= $paginaAtual === 'mascote.php' ? 'active' : '' ?>">
+                <a href="<?= url('docs/mascote.php') ?>" class="<?= $paginaAtual === 'mascote.php' ? 'active' : '' ?>">
                     <span class="nav-icon">🐜</span>
                     <span class="nav-text">Mascote do Projeto</span>
                 </a>
@@ -161,7 +161,7 @@ $paginaAtual = basename($_SERVER['PHP_SELF']);
                     </button>
                 </div>
 
-                <a href="logout.php" class="btn-sidebar-logout" title="Sair do sistema">
+                <a href="<?= url('modulos/auth/logout.php') ?>" class="btn-sidebar-logout" title="Sair do sistema">
                     <span>🚪</span>
                     <span class="nav-text">Desconectar</span>
                 </a>

@@ -3,12 +3,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+require_once __DIR__ . "/../../config/conexao.php";
+
 if (!isset($_SESSION['usuarioLogado'])) {
-    header('Location: login.php');
+    header('Location: ' . url('modulos/auth/login.php'));
     exit;
 }
-
-require_once "config/conexao.php";
 
 $idUsuario = obterIdUsuarioLogado();
 
@@ -73,7 +73,7 @@ if (!$cliente) {
 }
 
 $titulo_pagina = "MVM - Editar Cliente #" . $cliente['idCliente'];
-require_once "templates/header.php";
+require_once __DIR__ . "/../../templates/header.php";
 ?>
 
 <div class="page-container" style="max-width: 680px;">
@@ -135,4 +135,4 @@ require_once "templates/header.php";
 
 </div>
 
-<?php require_once "templates/footer.php"; ?>
+<?php require_once __DIR__ . "/../../templates/footer.php"; ?>

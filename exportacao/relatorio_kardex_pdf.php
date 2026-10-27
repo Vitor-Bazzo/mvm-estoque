@@ -3,13 +3,13 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+require_once __DIR__ . '/../config/conexao.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+
 if (!isset($_SESSION['usuarioLogado'])) {
-    header('Location: ../login.php');
+    header('Location: ' . url('modulos/auth/login.php'));
     exit;
 }
-
-require_once __DIR__ . '/../vendor/autoload.php';
-require_once __DIR__ . '/../config/conexao.php';
 
 use Dompdf\Dompdf;
 use Dompdf\Options;

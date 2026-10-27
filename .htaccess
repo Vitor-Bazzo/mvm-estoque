@@ -22,3 +22,46 @@ Options -Indexes
     Header set X-XSS-Protection "1; mode=block"
     Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
+
+# Compatibilidade Reversa e Roteamento para Pastas Modulares
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Módulos: Clientes
+    RewriteRule ^cliente\.php$ modulos/clientes/cliente.php [L,QSA]
+    RewriteRule ^cliente_editar\.php$ modulos/clientes/cliente_editar.php [L,QSA]
+    RewriteRule ^cliente_excluir\.php$ modulos/clientes/cliente_excluir.php [L,QSA]
+
+    # Módulos: Fornecedores
+    RewriteRule ^fornecedor\.php$ modulos/fornecedores/fornecedor.php [L,QSA]
+    RewriteRule ^fornecedor_editar\.php$ modulos/fornecedores/fornecedor_editar.php [L,QSA]
+    RewriteRule ^fornecedor_excluir\.php$ modulos/fornecedores/fornecedor_excluir.php [L,QSA]
+
+    # Módulos: Produtos
+    RewriteRule ^produto\.php$ modulos/produtos/produto.php [L,QSA]
+    RewriteRule ^produto_editar\.php$ modulos/produtos/produto_editar.php [L,QSA]
+    RewriteRule ^produto_excluir\.php$ modulos/produtos/produto_excluir.php [L,QSA]
+
+    # Módulos: Movimentos & Vendas
+    RewriteRule ^movimento\.php$ modulos/movimentos/movimento.php [L,QSA]
+    RewriteRule ^movimento_devolucao\.php$ modulos/movimentos/movimento_devolucao.php [L,QSA]
+    RewriteRule ^movimento_excluir\.php$ modulos/movimentos/movimento_excluir.php [L,QSA]
+    RewriteRule ^recibo\.php$ modulos/movimentos/recibo.php [L,QSA]
+
+    # Módulos: Relatórios
+    RewriteRule ^kardex\.php$ modulos/relatorios/kardex.php [L,QSA]
+    RewriteRule ^etiquetas\.php$ modulos/relatorios/etiquetas.php [L,QSA]
+
+    # Módulos: Autenticação
+    RewriteRule ^login\.php$ modulos/auth/login.php [L,QSA]
+    RewriteRule ^logout\.php$ modulos/auth/logout.php [L,QSA]
+    RewriteRule ^criar_conta\.php$ modulos/auth/criar_conta.php [L,QSA]
+
+    # Scripts & Automação
+    RewriteRule ^cron_alertas\.php$ scripts/cron_alertas.php [L,QSA]
+    RewriteRule ^disparar_alerta\.php$ scripts/disparar_alerta.php [L,QSA]
+
+    # Documentação & Institucional
+    RewriteRule ^api_docs\.php$ docs/api_docs.php [L,QSA]
+    RewriteRule ^mascote\.php$ docs/mascote.php [L,QSA]
+</IfModule>

@@ -1,12 +1,13 @@
 <?php
-$titulo_pagina = "Gerador de Etiquetas de Estoque - MVM";
-require_once "templates/header.php";
-require_once "config/conexao.php";
+require_once __DIR__ . "/../../config/conexao.php";
 
 if (!isset($_SESSION['usuarioLogado'])) {
-    header('Location: login.php');
+    header('Location: ' . url('modulos/auth/login.php'));
     exit;
 }
+
+$titulo_pagina = "Gerador de Etiquetas de Estoque - MVM";
+require_once __DIR__ . "/../../templates/header.php";
 
 $idUsuario = obterIdUsuarioLogado();
 $conexao = conectar();
@@ -71,7 +72,7 @@ mysqli_close($conexao);
                     <!-- Cabeçalho da Etiqueta -->
                     <div class="etiqueta-header">
                         <div class="etiqueta-brand">
-                            <img src="img/mascote_mvm.svg?v=3" alt="MVM" class="etiqueta-mini-logo">
+                            <img src="<?= url('img/mascote_mvm.svg?v=3') ?>" alt="MVM" class="etiqueta-mini-logo">
                             <span>MVM ESTOQUE</span>
                         </div>
                         <span class="etiqueta-cat"><?= htmlspecialchars($p['categoria'] ?: 'Geral') ?></span>
@@ -106,7 +107,7 @@ mysqli_close($conexao);
                 <div style="font-size: 38px; margin-bottom: 10px;">🏷️</div>
                 <h3>Nenhum produto cadastrado para gerar etiquetas</h3>
                 <p style="color: var(--text-muted); font-size: 13.5px; margin-top: 6px;">Cadastre produtos no catálogo para gerar as etiquetas de código de barras.</p>
-                <a href="produto.php" class="btn-primary" style="margin-top: 18px; display: inline-block;">Ir para Catálogo</a>
+                <a href="<?= url('modulos/produtos/produto.php') ?>" class="btn-primary" style="margin-top: 18px; display: inline-block;">Ir para Catálogo</a>
             </div>
         <?php endif; ?>
     </div>
@@ -362,4 +363,4 @@ function imprimirEtiquetas() {
 }
 </script>
 
-<?php require_once "templates/footer.php"; ?>
+<?php require_once __DIR__ . "/../../templates/footer.php"; ?>

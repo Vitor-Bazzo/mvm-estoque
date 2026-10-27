@@ -3,14 +3,13 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Verificação de autenticação
+require_once __DIR__ . "/../../config/conexao.php";
+require_once __DIR__ . "/../../config/email.php";
+
 if (!isset($_SESSION['usuarioLogado'])) {
-    header('Location: login.php');
+    header('Location: ' . url('modulos/auth/login.php'));
     exit;
 }
-
-require_once "config/conexao.php";
-require_once "config/email.php";
 
 $idUsuario = obterIdUsuarioLogado();
 
@@ -346,7 +345,7 @@ $lista_movimentos = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
 mysqli_close($conexao);
 
 $titulopagina = "MVM - Vendas & Movimentação";
-require_once "templates/header.php";
+require_once __DIR__ . "/../../templates/header.php";
 ?>
 
 <div class="page-container">
@@ -494,7 +493,7 @@ require_once "templates/header.php";
                                         <?php endif; ?>
 
                                         <!-- Ficha Kardex -->
-                                        <a href="kardex.php?idProduto=<?= (int)$m['idProduto'] ?>" class="btn-icon" title="Ver no Extrato Kardex">
+                                        <a href="<?= url('modulos/relatorios/kardex.php') ?>?idProduto=<?= (int)$m['idProduto'] ?>" class="btn-icon" title="Ver no Extrato Kardex">
                                             📜
                                         </a>
 
@@ -509,14 +508,13 @@ require_once "templates/header.php";
                                             </form>
                                         <?php endif; ?>
 
-                                        <!-- Exclusão Segura (POST) -->
-                                        <form action="movimento_excluir.php" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir permanentemente este registro?');">
-                                            <?= campoCSRF() ?>
-                                            <input type="hidden" name="id" value="<?= $m['idMovimento'] ?>">
-                                            <button type="submit" class="btn-icon delete" style="border:none; cursor:pointer;" title="Excluir Registro">
-                                                🗑️
-                                            </button>
-                                        </form>
+                                        <!-- Exclusão com Modal Personalizado -->
+                                        <?php
+                                            $descMov = $m['nomeProduto'] . ' (' . (int)$m['quantidade'] . ' un - ' . $tipoTexto . ')';
+                                        ?>
+                                        <button type="button" class="btn-icon delete" style="border:none; cursor:pointer;" onclick="abrirModalExclusao(<?= (int)$m['idMovimento'] ?>, <?= htmlspecialchars(json_encode($descMov), ENT_QUOTES, 'UTF-8') ?>)" title="Excluir Registro">
+                                            🗑️
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -999,6 +997,30 @@ require_once "templates/header.php";
     </div>
 </div>
 
+<!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO (Design Moderno & Seguro) -->
+<div id="modal-confirmar-exclusao" class="modal-container modal-dialog-center">
+    <div class="confirm-dialog-card">
+        <div class="confirm-dialog-icon">
+            🗑️
+        </div>
+        <h3>Excluir Movimento</h3>
+        <p>Tem certeza que deseja remover esta movimentação permanentemente do sistema?</p>
+        <div class="confirm-dialog-badge" id="confirm-dialog-item-nome">Registro de Movimento</div>
+        <p class="confirm-dialog-aviso">⚠️ Esta ação não pode ser desfeita. O saldo e o histórico de estoque serão afetados.</p>
+        
+        <form id="form-excluir-movimento-modal" action="movimento_excluir.php" method="POST">
+            <?= campoCSRF() ?>
+            <input type="hidden" name="id" id="input-excluir-id" value="">
+            <div class="confirm-dialog-actions">
+                <button type="button" class="btn-secondary" onclick="fecharModalExclusao()">Cancelar</button>
+                <button type="submit" class="btn-danger-confirm" id="btn-confirmar-delete">
+                    <span>🗑️</span> Sim, Excluir Movimento
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- SCRIPTS PARA GERENCIAMENTO DO CARRINHO, ABAS E FEFO -->
 <script>
     let carrinhoItens = [];
@@ -1149,6 +1171,39 @@ require_once "templates/header.php";
             aviso.style.display = 'none';
         }
     }
+
+    // Gerenciamento do Modal de Exclusão Personalizado
+    function abrirModalExclusao(id, descricao) {
+        const modal = document.getElementById('modal-confirmar-exclusao');
+        const inputId = document.getElementById('input-excluir-id');
+        const badgeNome = document.getElementById('confirm-dialog-item-nome');
+        
+        if (inputId) inputId.value = id;
+        if (badgeNome) badgeNome.textContent = descricao || 'Movimento #' + id;
+        if (modal) {
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function fecharModalExclusao() {
+        const modal = document.getElementById('modal-confirmar-exclusao');
+        if (modal) {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const modalExcluir = document.getElementById('modal-confirmar-exclusao');
+        if (modalExcluir) {
+            modalExcluir.addEventListener('click', (e) => {
+                if (e.target === modalExcluir) {
+                    fecharModalExclusao();
+                }
+            });
+        }
+    });
 </script>
 
-<?php require_once "templates/footer.php"; ?>
+<?php require_once __DIR__ . "/../../templates/footer.php"; ?>

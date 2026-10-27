@@ -1,6 +1,7 @@
 <?php
+require_once __DIR__ . "/../config/conexao.php";
 $titulo_pagina = "Mascote Oficial - MVM Estoque";
-require_once "templates/header.php";
+require_once __DIR__ . "/../templates/header.php";
 ?>
 
 <div class="page-container" style="max-width: 1000px; margin: 0 auto; padding: 30px 20px;">
@@ -22,13 +23,13 @@ require_once "templates/header.php";
         <!-- VISUALIZAÇÃO DO MASCOTE (CENTRO EM DESTAQUE) -->
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at center, rgba(16, 185, 129, 0.15) 0%, transparent 70%); padding: 30px; border-radius: var(--radius-md);">
             <div style="width: 320px; height: 320px; filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.45)); transition: transform 0.4s ease;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">
-                <img src="img/mascote_mvm.svg?v=5" alt="Emblema Oficial MVM Estoque" style="width: 100%; height: 100%; display: block; border-radius: 50%; object-fit: cover;">
+                <img src="<?= url('img/mascote_mvm.svg?v=5') ?>" alt="Emblema Oficial MVM Estoque" style="width: 100%; height: 100%; display: block; border-radius: 50%; object-fit: cover;">
             </div>
             <div style="margin-top: 24px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-                <a href="img/mascote_mvm.svg?v=5" download="mascote_mvm_estoque.svg" class="btn-primary" style="padding: 10px 18px; font-size: 13.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                <a href="<?= url('img/mascote_mvm.svg?v=5') ?>" download="mascote_mvm_estoque.svg" class="btn-primary" style="padding: 10px 18px; font-size: 13.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
                     <span>📥</span> Baixar Vetor SVG
                 </a>
-                <a href="img/mascote_mvm.png" download="mascote_mvm_estoque_1024x1024.png" class="btn-secondary" style="padding: 10px 18px; font-size: 13.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; border-radius: var(--radius-sm);">
+                <a href="<?= url('img/mascote_mvm.png') ?>" download="mascote_mvm_estoque_1024x1024.png" class="btn-secondary" style="padding: 10px 18px; font-size: 13.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; border-radius: var(--radius-sm);">
                     <span>🖼️</span> Baixar PNG (1024px)
                 </a>
             </div>
@@ -99,7 +100,7 @@ require_once "templates/header.php";
         <div style="background: #0f172a; border-radius: var(--radius-md); padding: 25px; text-align: center; border: 1px solid #1e293b;">
             <div style="font-size: 13px; color: #94a3b8; font-weight: 600; margin-bottom: 15px; text-transform: uppercase;">Aplicação em Fundo Escuro</div>
             <div style="width: 120px; height: 120px; margin: 0 auto;">
-                <img src="img/mascote_mvm.svg?v=5" alt="Versão Fundo Escuro" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                <img src="<?= url('img/mascote_mvm.svg?v=5') ?>" alt="Versão Fundo Escuro" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
             </div>
             <p style="color: #cbd5e1; font-size: 13px; margin-top: 15px;">Perfeito para Modo Noturno, dashboards BI e telas de sistema.</p>
         </div>
@@ -108,7 +109,7 @@ require_once "templates/header.php";
         <div style="background: #f8fafc; border-radius: var(--radius-md); padding: 25px; text-align: center; border: 1px solid #e2e8f0;">
             <div style="font-size: 13px; color: #64748b; font-weight: 600; margin-bottom: 15px; text-transform: uppercase;">Aplicação em Fundo Claro</div>
             <div style="width: 120px; height: 120px; margin: 0 auto;">
-                <img src="img/mascote_mvm.svg?v=5" alt="Versão Fundo Claro" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                <img src="<?= url('img/mascote_mvm.svg?v=5') ?>" alt="Versão Fundo Claro" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
             </div>
             <p style="color: #475569; font-size: 13px; margin-top: 15px;">Ideal para cabeçalho, relatórios em papel timbrado e notas fiscais.</p>
         </div>
@@ -117,9 +118,9 @@ require_once "templates/header.php";
         <div style="background: var(--bg-card); border-radius: var(--radius-md); padding: 25px; text-align: center; border: 1px solid var(--border);">
             <div style="font-size: 13px; color: var(--text-muted); font-weight: 600; margin-bottom: 15px; text-transform: uppercase;">Tamanhos Reduzidos</div>
             <div style="display: flex; align-items: center; justify-content: center; gap: 20px; height: 120px;">
-                <img src="img/mascote_mvm.svg?v=5" alt="64px" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;">
-                <img src="img/mascote_mvm.svg?v=5" alt="40px" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                <img src="img/mascote_mvm.svg?v=5" alt="24px" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+                <img src="<?= url('img/mascote_mvm.svg?v=5') ?>" alt="64px" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;">
+                <img src="<?= url('img/mascote_mvm.svg?v=5') ?>" alt="40px" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                <img src="<?= url('img/mascote_mvm.svg?v=5') ?>" alt="24px" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
             </div>
             <p style="color: var(--text-muted); font-size: 13px;">Legibilidade preservada mesmo em favicons e badges pequenos.</p>
         </div>
@@ -145,8 +146,8 @@ function baixarPNG(tamanho = 1024) {
         a.click();
         document.body.removeChild(a);
     };
-    img.src = 'img/mascote_mvm.svg?v=4';
+    img.src = '<?= url('img/mascote_mvm.svg?v=4') ?>';
 }
 </script>
 
-<?php require_once "templates/footer.php"; ?>
+<?php require_once __DIR__ . "/../templates/footer.php"; ?>

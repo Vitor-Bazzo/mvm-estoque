@@ -1,7 +1,9 @@
 <?php
-// Pasta onde as imagens dos produtos são salvas
+require_once __DIR__ . '/conexao.php';
+
+// Pasta onde as imagens dos produtos são salvas no disco
 define('PASTA_UPLOAD_PRODUTOS', __DIR__ . '/../uploads/produtos/');
-define('CAMINHO_UPLOAD_PRODUTOS', 'uploads/produtos/');
+define('CAMINHO_UPLOAD_PRODUTOS', url('uploads/produtos/'));
 
 /**
  * Salva a imagem enviada no formulário (campo "imagem") e retorna o nome

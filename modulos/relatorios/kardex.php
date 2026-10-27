@@ -3,12 +3,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+require_once __DIR__ . "/../../config/conexao.php";
+
 if (!isset($_SESSION['usuarioLogado'])) {
-    header('Location: login.php');
+    header('Location: ' . url('modulos/auth/login.php'));
     exit;
 }
-
-require_once "config/conexao.php";
 
 $idUsuario = obterIdUsuarioLogado();
 $conexao = conectar();
@@ -131,7 +131,7 @@ if ($idProdutoSelecionado > 0 && $produtoAtual) {
 mysqli_close($conexao);
 
 $titulo_pagina = "Ficha Kardex - MVM";
-require_once "templates/header.php";
+require_once __DIR__ . "/../../templates/header.php";
 ?>
 
 <style>
@@ -270,22 +270,22 @@ require_once "templates/header.php";
             <p>Histórico de movimentações e saldo em estoque do produto</p>
         </div>
         <div class="page-header-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <a href="exportacao/relatorio_kardex_pdf.php?idProduto=<?= $idProdutoSelecionado ?>&dataInicio=<?= urlencode($dataInicio) ?>&dataFim=<?= urlencode($dataFim) ?>" target="_blank" class="btn-secondary" title="Gerar Livro Oficial Kardex em PDF">
+            <a href="<?= url('exportacao/relatorio_kardex_pdf.php') ?>?idProduto=<?= $idProdutoSelecionado ?>&dataInicio=<?= urlencode($dataInicio) ?>&dataFim=<?= urlencode($dataFim) ?>" target="_blank" class="btn-secondary" title="Gerar Livro Oficial Kardex em PDF">
                 <span>📄</span> Kardex (PDF)
             </a>
-            <a href="exportacao/relatorio_kardex_excel.php?idProduto=<?= $idProdutoSelecionado ?>&dataInicio=<?= urlencode($dataInicio) ?>&dataFim=<?= urlencode($dataFim) ?>" class="btn-secondary" title="Exportar Kardex em planilha Excel (.xlsx)">
+            <a href="<?= url('exportacao/relatorio_kardex_excel.php') ?>?idProduto=<?= $idProdutoSelecionado ?>&dataInicio=<?= urlencode($dataInicio) ?>&dataFim=<?= urlencode($dataFim) ?>" class="btn-secondary" title="Exportar Kardex em planilha Excel (.xlsx)">
                 <span>📊</span> Kardex (.xlsx)
             </a>
-            <a href="exportacao/relatorio_balanco_pdf.php" target="_blank" class="btn-secondary" title="Gerar Balanço Mensal Oficial em PDF">
+            <a href="<?= url('exportacao/relatorio_balanco_pdf.php') ?>" target="_blank" class="btn-secondary" title="Gerar Balanço Mensal Oficial em PDF">
                 <span>📑</span> Balanço (PDF)
             </a>
-            <a href="exportacao/relatorio_balanco_excel.php" class="btn-secondary" title="Exportar Balanço Mensal em planilha Excel (.xlsx)">
+            <a href="<?= url('exportacao/relatorio_balanco_excel.php') ?>" class="btn-secondary" title="Exportar Balanço Mensal em planilha Excel (.xlsx)">
                 <span>📈</span> Balanço (.xlsx)
             </a>
             <button type="button" onclick="window.print()" class="btn-secondary" title="Imprimir">
                 <span>🖨️</span> Imprimir
             </button>
-            <a href="movimento.php" class="btn-primary" title="Registrar movimentação">
+            <a href="<?= url('modulos/movimentos/movimento.php') ?>" class="btn-primary" title="Registrar movimentação">
                 <span>➕</span> Nova Movimentação
             </a>
         </div>
@@ -471,11 +471,11 @@ require_once "templates/header.php";
                                     <!-- Ação / Recibo -->
                                     <td style="text-align: right;">
                                         <?php if (!empty($item['codigoPedido'])): ?>
-                                            <a href="recibo.php?pedido=<?= urlencode($item['codigoPedido']) ?>" target="_blank" class="btn-recibo-link" title="Ver Recibo">
+                                            <a href="<?= url('modulos/movimentos/recibo.php') ?>?pedido=<?= urlencode($item['codigoPedido']) ?>" target="_blank" class="btn-recibo-link" title="Ver Recibo">
                                                 🧾
                                             </a>
                                         <?php else: ?>
-                                            <a href="recibo.php?id=<?= $item['idMovimento'] ?>" target="_blank" class="btn-recibo-link" title="Ver Recibo">
+                                            <a href="<?= url('modulos/movimentos/recibo.php') ?>?id=<?= $item['idMovimento'] ?>" target="_blank" class="btn-recibo-link" title="Ver Recibo">
                                                 🧾
                                             </a>
                                         <?php endif; ?>
@@ -502,4 +502,4 @@ require_once "templates/header.php";
 
 </div>
 
-<?php require_once "templates/footer.php"; ?>
+<?php require_once __DIR__ . "/../../templates/footer.php"; ?>

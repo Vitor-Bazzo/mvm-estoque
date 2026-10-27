@@ -74,6 +74,35 @@ Construído com foco em **agilidade operacional**, o sistema conta com uma inter
 
 ---
 
+## 📁 Estrutura de Diretórios Organizada
+
+```text
+mvm-estoque/
+├── api/                  # APIs RESTful e proxy de consulta EAN/GTIN
+├── config/               # Conexão com banco, autenticação, alertas e upload
+├── css/                  # Folhas de estilo modular (Power BI, temas, animações)
+├── docs/                 # Documentação interativa de APIs e Mascote oficial
+├── exportacao/           # Scripts de geração de relatórios Excel (.xlsx) e PDF
+├── img/                  # Logotipos, ícones e Mascote oficial vetorizado
+├── javaScript/           # Scripts front-end (gráficos BI, exportação, animações)
+├── modulos/              # Módulos do sistema organizados por contexto
+│   ├── auth/             # Login, logout e criação de conta
+│   ├── clientes/         # Listagem, cadastro, edição e exclusão de clientes
+│   ├── fornecedores/     # Listagem, cadastro, edição e exclusão de fornecedores
+│   ├── produtos/         # Catálogo de produtos, precificação e gestão de estoque
+│   ├── movimentos/       # Registro de entradas, vendas (carrinho), devoluções e recibos
+│   └── relatorios/       # Ficha Kardex com saldos e gerador de etiquetas de gôndola
+├── scripts/              # Scripts de cron agendado e disparo de alertas
+├── sql/                  # Scripts de banco de dados e dumps completos
+├── templates/            # Header dinâmico com navegação e footer do sistema
+├── uploads/              # Fotos dos produtos enviadas pelos operadores
+├── .htaccess             # Cabeçalhos de segurança e compatibilidade reversa
+├── index.php             # Página principal do sistema (Dashboard BI Executivo)
+└── sw.js                 # Service Worker do PWA (Progressive Web App)
+```
+
+---
+
 ## 👥 Autores & Créditos
 
 - **Projeto de TCC:** MVM Estoque & Logística

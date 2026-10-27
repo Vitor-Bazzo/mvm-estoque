@@ -204,6 +204,45 @@ function enviarHeadersSeguranca() {
     }
 }
 
+/**
+ * Retorna a URL base do projeto (compatível com XAMPP em subpastas e servidores de produção)
+ */
+function obterBaseUrl() {
+    static $baseUrl = null;
+    if ($baseUrl !== null) {
+        return $baseUrl;
+    }
+
+    $dirRaiz = str_replace('\\', '/', realpath(__DIR__ . '/..'));
+    $docRoot = isset($_SERVER['DOCUMENT_ROOT']) ? str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT'])) : '';
+
+    if (!empty($docRoot) && strpos($dirRaiz, $docRoot) === 0) {
+        $baseUrl = substr($dirRaiz, strlen($docRoot));
+    } else {
+        $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+        if (preg_match('#^(.*?)/(modulos/[^/]+|scripts|docs|exportacao|api(?:/v\d+)?)#', $scriptDir, $matches)) {
+            $baseUrl = $matches[1];
+        } else {
+            $baseUrl = $scriptDir;
+        }
+    }
+
+    $baseUrl = rtrim(str_replace('\\', '/', $baseUrl), '/');
+    return $baseUrl;
+}
+
+/**
+ * Monta a URL completa para qualquer asset ou rota interna a partir da raiz do projeto
+ */
+function url($caminho = '') {
+    $base = obterBaseUrl();
+    $caminho = ltrim($caminho, '/');
+    if ($caminho === '') {
+        return $base ?: '/';
+    }
+    return ($base ? $base . '/' : '/') . $caminho;
+}
+
 // Inicializa a sessão segura e os headers globais
 iniciarSessaoSegura();
 enviarHeadersSeguranca();

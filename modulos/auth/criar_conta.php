@@ -2,7 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require_once __DIR__ . "/config/conexao.php";
+require_once __DIR__ . "/../../config/conexao.php";
 
 $titulopagina = "MVM - Criar Conta";
 $mensagemerro = "";
@@ -57,7 +57,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             'texto' => "Conta criada com sucesso! Você foi conectado ao seu novo perfil como <strong>" . htmlspecialchars($usuario) . "</strong>."
                         ];
 
-                        header("Location: index.php");
+                        header("Location: " . url('index.php'));
                         exit;
                     } else {
                         $mensagemerro = "Erro ao tentar cadastrar o usuário no banco de dados.";
@@ -72,14 +72,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-require_once "templates/header.php"; 
+require_once __DIR__ . "/../../templates/header.php"; 
 ?>
 
 <div class="auth-wrapper">
     <div class="auth-card">
         <div class="auth-header">
-            <a href="mascote.php" title="Conheça o Mascote Oficial MVM" style="display: inline-block; text-decoration: none;">
-                <img src="img/mascote_mvm.svg?v=5" alt="Mascote MVM Estoque" style="width: 84px; height: 84px; margin: 0 auto 12px; display: block; border-radius: 50%; box-shadow: 0 8px 24px rgba(0, 112, 74, 0.35); transition: transform 0.3s ease; object-fit: cover;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+            <a href="<?= url('docs/mascote.php') ?>" title="Conheça o Mascote Oficial MVM" style="display: inline-block; text-decoration: none;">
+                <img src="<?= url('img/mascote_mvm.svg?v=5') ?>" alt="Mascote MVM Estoque" style="width: 84px; height: 84px; margin: 0 auto 12px; display: block; border-radius: 50%; box-shadow: 0 8px 24px rgba(0, 112, 74, 0.35); transition: transform 0.3s ease; object-fit: cover;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
             </a>
             <h1>Criar Nova Conta</h1>
             <p>Cadastre um novo operador no sistema MVM</p>
@@ -139,4 +139,4 @@ require_once "templates/header.php";
     }
 </script>
 
-<?php require_once "templates/footer.php"; ?>
+<?php require_once __DIR__ . "/../../templates/footer.php"; ?>

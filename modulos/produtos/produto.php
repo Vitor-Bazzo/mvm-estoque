@@ -3,14 +3,13 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Verificação de autenticação
+require_once __DIR__ . "/../../config/conexao.php";
+require_once __DIR__ . "/../../config/upload.php";
+
 if (!isset($_SESSION['usuarioLogado'])) {
-    header('Location: login.php');
+    header('Location: ' . url('modulos/auth/login.php'));
     exit;
 }
-
-require_once "config/conexao.php";
-require_once "config/upload.php";
 
 $idUsuario = obterIdUsuarioLogado();
 
@@ -100,7 +99,7 @@ if ($resultado && mysqli_num_rows($resultado) > 0) {
 mysqli_close($conexao);
 
 $titulo_pagina = "MVM - Catálogo de Produtos";
-require_once "templates/header.php";
+require_once __DIR__ . "/../../templates/header.php";
 ?>
 
 <div class="page-container">
@@ -125,15 +124,15 @@ require_once "templates/header.php";
             <button type="button" class="btn-primary" data-open-modal="modal-novo-produto">
                 <span>➕</span> Novo Produto
             </button>
-            <a href="exportacao/relatorio_inventario_pdf.php" target="_blank" class="btn-secondary" title="Gerar Folha Oficial de Inventário Físico para Contagem em PDF">
+            <a href="<?= url('exportacao/relatorio_inventario_pdf.php') ?>" target="_blank" class="btn-secondary" title="Gerar Folha Oficial de Inventário Físico para Contagem em PDF">
                 <span>📋</span> Inventário (PDF)
             </a>
-            <a href="exportacao/relatorio_inventario_excel.php" class="btn-secondary" title="Baixar planilha de Contagem de Estoque Físico com fórmulas (.xlsx)">
+            <a href="<?= url('exportacao/relatorio_inventario_excel.php') ?>" class="btn-secondary" title="Baixar planilha de Contagem de Estoque Físico com fórmulas (.xlsx)">
                 <span>📊</span> Inventário (.xlsx)
             </a>
-            <form action="disparar_alerta.php" method="POST" style="display:inline; margin:0;" onsubmit="return confirm('Deseja enviar o relatório de estoque crítico e validades para seu e-mail agora?')">
+            <form action="<?= url('scripts/disparar_alerta.php') ?>" method="POST" style="display:inline; margin:0;" onsubmit="return confirm('Deseja enviar o relatório de estoque crítico e validades para seu e-mail agora?')">
                 <?= campoCSRF() ?>
-                <input type="hidden" name="origem" value="produto.php">
+                <input type="hidden" name="origem" value="<?= url('modulos/produtos/produto.php') ?>">
                 <button type="submit" class="btn-secondary" title="Enviar relatório gerencial de alertas por e-mail">
                     <span>📧</span> Alertas por E-mail
                 </button>
@@ -229,7 +228,7 @@ require_once "templates/header.php";
                                 </td>
                                 <td>
                                     <div class="row-actions">
-                                        <a href="kardex.php?idProduto=<?= (int)$p['idProduto'] ?>" class="btn-icon" title="Ver Ficha Kardex (Extrato)">
+                                        <a href="<?= url('modulos/relatorios/kardex.php') ?>?idProduto=<?= (int)$p['idProduto'] ?>" class="btn-icon" title="Ver Ficha Kardex (Extrato)">
                                             📜
                                         </a>
                                         <a href="produto_editar.php?id=<?= (int)$p['idProduto'] ?>" class="btn-icon" title="Editar Produto">
@@ -443,10 +442,10 @@ require_once "templates/header.php";
     const produtosData = <?= json_encode($produtos, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="javaScript/exportarexcel.js"></script>
+<script src="<?= url('javaScript/exportarexcel.js') ?>"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script src="javaScript/exportarPDF.js"></script>
+<script src="<?= url('javaScript/exportarPDF.js') ?>"></script>
 
 <!-- Script de Integração com a API de Códigos de Barras EAN -->
 <script>
@@ -476,7 +475,7 @@ require_once "templates/header.php";
         msg.style.display = 'none';
 
         try {
-            const response = await fetch(`api/consulta_ean.php?ean=${ean}`);
+            const response = await fetch(`<?= url('api/consulta_ean.php') ?>?ean=${ean}`);
             const data = await response.json();
 
             if (data.sucesso) {
@@ -534,4 +533,4 @@ require_once "templates/header.php";
     }
 </script>
 
-<?php require_once "templates/footer.php"; ?>
+<?php require_once __DIR__ . "/../../templates/footer.php"; ?>

@@ -13,8 +13,8 @@
  *    http://localhost/mvm/cron_alertas.php?token=mvm_estoque_alerta_2026
  */
 
-require_once __DIR__ . "/config/conexao.php";
-require_once __DIR__ . "/config/alertas_estoque.php";
+require_once __DIR__ . "/../config/conexao.php";
+require_once __DIR__ . "/../config/alertas_estoque.php";
 
 $isCli = (php_sapi_name() === 'cli');
 

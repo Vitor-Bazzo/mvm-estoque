@@ -1,8 +1,8 @@
 <?php
-require_once "config/conexao.php";
+require_once __DIR__ . "/../../config/conexao.php";
 
 if (!isset($_SESSION['usuarioLogado'])) {
-    header('Location: login.php');
+    header('Location: ' . url('modulos/auth/login.php'));
     exit;
 }
 
@@ -573,7 +573,7 @@ foreach ($itens as $it) {
          ========================================================================= -->
     <div class="thermal-ticket">
         <div class="ticket-header">
-            <img src="img/mascote_mvm.svg?v=3" alt="MVM Logo" class="ticket-logo">
+            <img src="<?= url('img/mascote_mvm.svg?v=3') ?>" alt="MVM Logo" class="ticket-logo">
             <h1>MVM ESTOQUE &amp; LOGÍSTICA</h1>
             <p>Sistema Integrado de Controle de Armazém &amp; Expedição</p>
             <span class="ticket-badge">
@@ -705,7 +705,7 @@ foreach ($itens as $it) {
     <div class="picking-sheet">
         <div class="picking-header">
             <div class="picking-header-left">
-                <img src="img/mascote_mvm.svg?v=3" alt="MVM" style="width: 48px; height: 48px;">
+                <img src="<?= url('img/mascote_mvm.svg?v=3') ?>" alt="MVM" style="width: 48px; height: 48px;">
                 <div class="picking-header-titles">
                     <h1>Ordem de Separação de Pedido (Picking List)</h1>
                     <p>MVM Estoque &amp; Logística &bull; Módulo WMS</p>
