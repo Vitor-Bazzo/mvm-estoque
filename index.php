@@ -39,10 +39,10 @@ $dadosBI = obterDadosDashboardBI();
                         <span class="pbi-tag-pulse"></span>
                         Atualizado (<?= date('d/m/Y H:i') ?>)
                     </div>
-                    <a href="exportacao/relatorio_balanco_pdf.php" target="_blank" class="pbi-btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #ffffff; text-decoration: none;" title="Gerar Balanço Mensal Oficial em PDF">
+                    <a href="<?= url('exportacao/relatorio_balanco_pdf.php') ?>" target="_blank" class="pbi-btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #ffffff; text-decoration: none;" title="Gerar Balanço Mensal Oficial em PDF">
                         <span>📑</span> Balanço (PDF)
                     </a>
-                    <a href="exportacao/relatorio_inventario_pdf.php" target="_blank" class="pbi-btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #ffffff; text-decoration: none;" title="Folha Oficial de Inventário Físico para Auditoria">
+                    <a href="<?= url('exportacao/relatorio_inventario_pdf.php') ?>" target="_blank" class="pbi-btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #ffffff; text-decoration: none;" title="Folha Oficial de Inventário Físico para Auditoria">
                         <span>📋</span> Inventário (PDF)
                     </a>
                     <a href="<?= url('modulos/movimentos/movimento.php') ?>" class="pbi-btn pbi-btn-primary">
@@ -134,7 +134,7 @@ $dadosBI = obterDadosDashboardBI();
                                         <span class="pbi-stock-meta-preco">
                                             R$ <?= number_format((float)$item['preco'], 2, ',', '.') ?>
                                         </span>
-                                        <a href="produto_editar.php?idProduto=<?= $item['idProduto'] ?>" class="pbi-stock-item-edit-btn" title="Editar produto">
+                                        <a href="<?= url('modulos/produtos/produto_editar.php') ?>?idProduto=<?= $item['idProduto'] ?>" class="pbi-stock-item-edit-btn" title="Editar produto">
                                             Editar ✏️
                                         </a>
                                     </div>
@@ -220,7 +220,7 @@ $dadosBI = obterDadosDashboardBI();
                             O seu banco de dados possui poucas saídas cadastradas. Estamos exibindo uma simulação rica com a categoria <strong>Bebidas a 50%</strong> e vendas diárias para você testar todo o potencial dos gráficos.
                         </div>
                     </div>
-                    <a href="config/popular_dados_exemplo.php?executar=sim" class="pbi-alert-btn" onclick="return confirm('Deseja gravar as vendas e produtos de teste no seu banco MySQL agora?')">
+                    <a href="<?= url('config/popular_dados_exemplo.php') ?>?executar=sim" class="pbi-alert-btn" onclick="return confirm('Deseja gravar as vendas e produtos de teste no seu banco MySQL agora?')">
                         ⚡ Gravar Vendas de Teste no Banco
                     </a>
                 </div>

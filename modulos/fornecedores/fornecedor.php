@@ -198,13 +198,9 @@ require_once __DIR__ . "/../../templates/header.php";
                                         <a href="fornecedor_editar.php?id=<?= (int)$f['idFornecedor'] ?>" class="btn-icon" title="Editar Fornecedor">
                                             ✏️
                                         </a>
-                                        <form action="fornecedor_excluir.php" method="POST" style="display:inline;" onsubmit="return confirm('Deseja excluir este fornecedor?');">
-                                            <?= campoCSRF() ?>
-                                            <input type="hidden" name="id" value="<?= (int)$f['idFornecedor'] ?>">
-                                            <button type="submit" class="btn-icon delete" style="border:none; cursor:pointer;" title="Excluir Fornecedor">
-                                                🗑️
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn-icon delete" style="border:none; cursor:pointer;" onclick="abrirModalExclusao(<?= (int)$f['idFornecedor'] ?>, <?= htmlspecialchars(json_encode($f['nomeFornecedor']), ENT_QUOTES, 'UTF-8') ?>)" title="Excluir Fornecedor">
+                                            🗑️
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -293,6 +289,64 @@ require_once __DIR__ . "/../../templates/header.php";
         </form>
     </div>
 </div>
+
+<!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO (Design Moderno & Seguro) -->
+<div id="modal-confirmar-exclusao" class="modal-container modal-dialog-center">
+    <div class="confirm-dialog-card">
+        <div class="confirm-dialog-icon">
+            🗑️
+        </div>
+        <h3>Excluir Fornecedor</h3>
+        <p>Tem certeza que deseja remover este fornecedor permanentemente do sistema?</p>
+        <div class="confirm-dialog-badge" id="confirm-dialog-item-nome">Nome do Fornecedor</div>
+        <p class="confirm-dialog-aviso">⚠️ Esta ação não pode ser desfeita. O vínculo com produtos cadastrados será afetado.</p>
+        
+        <form id="form-excluir-fornecedor-modal" action="fornecedor_excluir.php" method="POST">
+            <?= campoCSRF() ?>
+            <input type="hidden" name="id" id="input-excluir-id" value="">
+            <div class="confirm-dialog-actions">
+                <button type="button" class="btn-secondary" onclick="fecharModalExclusao()">Cancelar</button>
+                <button type="submit" class="btn-danger-confirm" id="btn-confirmar-delete">
+                    <span>🗑️</span> Sim, Excluir Fornecedor
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function abrirModalExclusao(id, nome) {
+        const modal = document.getElementById('modal-confirmar-exclusao');
+        const inputId = document.getElementById('input-excluir-id');
+        const badgeNome = document.getElementById('confirm-dialog-item-nome');
+        
+        if (inputId) inputId.value = id;
+        if (badgeNome) badgeNome.textContent = nome || 'Fornecedor #' + id;
+        if (modal) {
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function fecharModalExclusao() {
+        const modal = document.getElementById('modal-confirmar-exclusao');
+        if (modal) {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const modalExcluir = document.getElementById('modal-confirmar-exclusao');
+        if (modalExcluir) {
+            modalExcluir.addEventListener('click', (e) => {
+                if (e.target === modalExcluir) {
+                    fecharModalExclusao();
+                }
+            });
+        }
+    });
+</script>
 
 <!-- Scripts de Exportação Client-side -->
 <script>
