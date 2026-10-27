@@ -5,10 +5,17 @@
  */
 
 function conectar() {
-    // 1. Arquivo opcional de configuração em produção (se você criar conexao_producao.php)
+    // 1. Arquivo opcional de configuração em produção (carrega automaticamente na nuvem)
     $arquivoProducao = __DIR__ . '/conexao_producao.php';
     if (file_exists($arquivoProducao)) {
-        require_once $arquivoProducao;
+        $hostServidor = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? '');
+        $hostLimpo = explode(':', $hostServidor)[0];
+        $isLocal = empty($hostLimpo) || in_array($hostLimpo, ['localhost', '127.0.0.1']);
+
+        // Se estiver rodando na nuvem (não localhost) ou forçado explicitamente
+        if (!$isLocal || (defined('FORCAR_PRODUCAO') && FORCAR_PRODUCAO)) {
+            require_once $arquivoProducao;
+        }
     }
 
     // 2. Lê constantes ou variáveis de ambiente (com fallback automático para XAMPP local)
@@ -21,12 +28,22 @@ function conectar() {
     // Se for localhost/127.0.0.1, tenta ambos caso o MySQL esteja em socket ou IP
     $hostsParaTentar = ($host === '127.0.0.1' || $host === 'localhost') ? ['127.0.0.1', 'localhost'] : [$host];
 
-    // Fallback inteligente para nomes de banco comuns do projeto no XAMPP local (bdmvm / mvm)
+    // Fallback inteligente para nomes de banco comuns do projeto no XAMPP e InfinityFree
     $bancosParaTentar = [$bd];
     if ($bd === 'bdmvm') {
         $bancosParaTentar[] = 'mvm';
     } elseif ($bd === 'mvm') {
         $bancosParaTentar[] = 'bdmvm';
+    }
+
+    // Suporte flexível para bancos criados no InfinityFree (ex: if0_42798246_bdmvm ou if0_42798246)
+    if (strpos($bd, 'if0_') === 0 || strpos($user, 'if0_') === 0) {
+        $prefix = preg_replace('/_.*$/', '', $user);
+        $bancosParaTentar[] = $bd;
+        $bancosParaTentar[] = $prefix . '_bdmvm';
+        $bancosParaTentar[] = $prefix;
+        $bancosParaTentar[] = $prefix . '_mvm';
+        $bancosParaTentar = array_values(array_unique($bancosParaTentar));
     }
 
     $ultimoErro = '';
