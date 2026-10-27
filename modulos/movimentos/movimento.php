@@ -299,50 +299,70 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 // CONSULTAS PARA RENDERIZAÇÃO DA PÁGINA (GET)
 // =========================================================================
 $conexao = conectar();
+$erroBanco = null;
+$lista_produtos = [];
+$lista_clientes = [];
+$lista_fornecedores = [];
+$lista_movimentos = [];
 
-// Lista produtos do usuário com preços, lotes e validade para suporte a FEFO e WMS
-$stmtProd = mysqli_prepare($conexao, "SELECT idProduto, nomeProduto, quantidade, preco, precoCusto, categoria, lote, dataValidade, localizacao FROM produto WHERE idUsuario = ? ORDER BY nomeProduto ASC");
-mysqli_stmt_bind_param($stmtProd, "i", $idUsuario);
-mysqli_stmt_execute($stmtProd);
-$resultado = mysqli_stmt_get_result($stmtProd);
-$lista_produtos = mysqli_fetch_all($resultado, MYSQLI_ASSOC); 
+if (is_object($conexao)) {
+    try {
+        // Lista produtos do usuário com preços, lotes e validade para suporte a FEFO e WMS
+        $stmtProd = @mysqli_prepare($conexao, "SELECT idProduto, nomeProduto, quantidade, preco, precoCusto, categoria, lote, dataValidade, localizacao FROM produto WHERE idUsuario = ? ORDER BY nomeProduto ASC");
+        if ($stmtProd) {
+            mysqli_stmt_bind_param($stmtProd, "i", $idUsuario);
+            mysqli_stmt_execute($stmtProd);
+            $resultado = mysqli_stmt_get_result($stmtProd);
+            $lista_produtos = mysqli_fetch_all($resultado, MYSQLI_ASSOC); 
+        }
 
-// Lista clientes do usuário
-$stmtCli = mysqli_prepare($conexao, "SELECT idCliente, nomeCliente, email FROM cliente WHERE idUsuario = ? ORDER BY nomeCliente ASC");
-mysqli_stmt_bind_param($stmtCli, "i", $idUsuario);
-mysqli_stmt_execute($stmtCli);
-$resultado = mysqli_stmt_get_result($stmtCli);
-$lista_clientes = mysqli_fetch_all($resultado, MYSQLI_ASSOC); 
+        // Lista clientes do usuário
+        $stmtCli = @mysqli_prepare($conexao, "SELECT idCliente, nomeCliente, email FROM cliente WHERE idUsuario = ? ORDER BY nomeCliente ASC");
+        if ($stmtCli) {
+            mysqli_stmt_bind_param($stmtCli, "i", $idUsuario);
+            mysqli_stmt_execute($stmtCli);
+            $resultado = mysqli_stmt_get_result($stmtCli);
+            $lista_clientes = mysqli_fetch_all($resultado, MYSQLI_ASSOC); 
+        }
 
-// Lista fornecedores do usuário
-$stmtForn = mysqli_prepare($conexao, "SELECT idFornecedor, nomeFornecedor, segmento FROM fornecedor WHERE idUsuario = ? ORDER BY nomeFornecedor ASC");
-mysqli_stmt_bind_param($stmtForn, "i", $idUsuario);
-mysqli_stmt_execute($stmtForn);
-$resultado = mysqli_stmt_get_result($stmtForn);
-$lista_fornecedores = mysqli_fetch_all($resultado, MYSQLI_ASSOC); 
+        // Lista fornecedores do usuário
+        $stmtForn = @mysqli_prepare($conexao, "SELECT idFornecedor, nomeFornecedor, segmento FROM fornecedor WHERE idUsuario = ? ORDER BY nomeFornecedor ASC");
+        if ($stmtForn) {
+            mysqli_stmt_bind_param($stmtForn, "i", $idUsuario);
+            mysqli_stmt_execute($stmtForn);
+            $resultado = mysqli_stmt_get_result($stmtForn);
+            $lista_fornecedores = mysqli_fetch_all($resultado, MYSQLI_ASSOC); 
+        }
 
-// Lista movimentos do usuário com código de pedido, lote, validade e endereço de armazém
-$sqlmovimento = "
-SELECT 
-    movimento.idMovimento, movimento.codigoPedido, movimento.idCliente, movimento.idFornecedor, movimento.idProduto, 
-    movimento.tipoMovimento, movimento.dataMovimento, movimento.dataDevolucao, 
-    movimento.observacao, movimento.lote, movimento.dataValidade, movimento.motivoAjuste, movimento.valorTotal,
-    movimento.quantidade, produto.nomeProduto, produto.preco, produto.localizacao,
-    cliente.nomeCliente, fornecedor.nomeFornecedor
-FROM movimento
-INNER JOIN produto ON produto.idProduto = movimento.idProduto
-LEFT JOIN cliente ON cliente.idCliente = movimento.idCliente
-LEFT JOIN fornecedor ON fornecedor.idFornecedor = movimento.idFornecedor
-WHERE movimento.idUsuario = ?
-ORDER BY dataMovimento DESC, idMovimento DESC
-";
-$stmtMovList = mysqli_prepare($conexao, $sqlmovimento);
-mysqli_stmt_bind_param($stmtMovList, "i", $idUsuario);
-mysqli_stmt_execute($stmtMovList);
-$resultado = mysqli_stmt_get_result($stmtMovList);
-$lista_movimentos = mysqli_fetch_all($resultado, MYSQLI_ASSOC); 
-
-mysqli_close($conexao);
+        // Lista movimentos do usuário com código de pedido, lote, validade e endereço de armazém
+        $sqlmovimento = "
+        SELECT 
+            movimento.idMovimento, movimento.codigoPedido, movimento.idCliente, movimento.idFornecedor, movimento.idProduto, 
+            movimento.tipoMovimento, movimento.dataMovimento, movimento.dataDevolucao, 
+            movimento.observacao, movimento.lote, movimento.dataValidade, movimento.motivoAjuste, movimento.valorTotal,
+            movimento.quantidade, produto.nomeProduto, produto.preco, produto.localizacao,
+            cliente.nomeCliente, fornecedor.nomeFornecedor
+        FROM movimento
+        INNER JOIN produto ON produto.idProduto = movimento.idProduto
+        LEFT JOIN cliente ON cliente.idCliente = movimento.idCliente
+        LEFT JOIN fornecedor ON fornecedor.idFornecedor = movimento.idFornecedor
+        WHERE movimento.idUsuario = ?
+        ORDER BY dataMovimento DESC, idMovimento DESC
+        ";
+        $stmtMovList = @mysqli_prepare($conexao, $sqlmovimento);
+        if ($stmtMovList) {
+            mysqli_stmt_bind_param($stmtMovList, "i", $idUsuario);
+            mysqli_stmt_execute($stmtMovList);
+            $resultado = mysqli_stmt_get_result($stmtMovList);
+            $lista_movimentos = mysqli_fetch_all($resultado, MYSQLI_ASSOC); 
+        }
+        mysqli_close($conexao);
+    } catch (Throwable $e) {
+        $erroBanco = $e->getMessage();
+    }
+} else {
+    $erroBanco = is_string($conexao) ? $conexao : "Não foi possível conectar ao banco de dados MySQL.";
+}
 
 $titulopagina = "MVM - Vendas & Movimentação";
 require_once __DIR__ . "/../../templates/header.php";
@@ -350,6 +370,20 @@ require_once __DIR__ . "/../../templates/header.php";
 
 <div class="page-container">
     
+    <?php if (!empty($erroBanco)): ?>
+        <div class="alert-box error" style="margin-bottom: 20px; display: flex; align-items: flex-start; gap: 12px; padding: 16px;">
+            <span style="font-size: 22px;">⚠️</span>
+            <div>
+                <strong>Atenção ao Banco de Dados:</strong> <?= htmlspecialchars($erroBanco) ?>
+                <div style="margin-top: 8px;">
+                    <a href="<?= url('instalar.php') ?>" class="btn-secondary" style="display:inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 12px; text-decoration: none;">
+                        <span>⚡</span> Abrir Instalador Automático de Tabelas (instalar.php)
+                    </a>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <!-- Alertas Flash -->
     <?php if (!empty($_SESSION['mensagem_movimento'])): ?>
         <div class="alert-box <?= $_SESSION['mensagem_movimento'][0] === 'ok' ? 'success' : 'error' ?>">

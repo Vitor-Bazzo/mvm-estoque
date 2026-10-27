@@ -60,43 +60,56 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 
-// Consulta de fornecedores do próprio usuário
+// Consulta de fornecedores e produtos do próprio usuário
 $conexao = conectar();
 $listaFornecedores = [];
-$stmtForn = mysqli_prepare($conexao, "SELECT nomeFornecedor FROM fornecedor WHERE idUsuario = ? ORDER BY nomeFornecedor ASC");
-if ($stmtForn) {
-    mysqli_stmt_bind_param($stmtForn, "i", $idUsuario);
-    mysqli_stmt_execute($stmtForn);
-    $resFornecedores = mysqli_stmt_get_result($stmtForn);
-    if ($resFornecedores && mysqli_num_rows($resFornecedores) > 0) {
-        $listaFornecedores = mysqli_fetch_all($resFornecedores, MYSQLI_ASSOC);
-    }
-}
-
-// Consulta de produtos do próprio usuário
-$busca = isset($_GET['busca']) ? trim($_GET['busca']) : '';
-$campoValido = in_array($_GET['campo'] ?? '', ['nomeProduto', 'categoria', 'nomeFornecedor']) ? $_GET['campo'] : 'nomeProduto';
 $produtos = [];
+$erroBanco = null;
 
-if ($busca !== '') {
-    $sql = "SELECT * FROM produto WHERE idUsuario = ? AND $campoValido LIKE ? ORDER BY nomeProduto ASC";
-    $stmt = mysqli_prepare($conexao, $sql);
-    $termoBusca = "%" . $busca . "%";
-    mysqli_stmt_bind_param($stmt, 'is', $idUsuario, $termoBusca);
-    mysqli_stmt_execute($stmt);
-    $resultado = mysqli_stmt_get_result($stmt);
+if (is_object($conexao)) {
+    try {
+        $stmtForn = @mysqli_prepare($conexao, "SELECT nomeFornecedor FROM fornecedor WHERE idUsuario = ? ORDER BY nomeFornecedor ASC");
+        if ($stmtForn) {
+            mysqli_stmt_bind_param($stmtForn, "i", $idUsuario);
+            mysqli_stmt_execute($stmtForn);
+            $resFornecedores = mysqli_stmt_get_result($stmtForn);
+            if ($resFornecedores && mysqli_num_rows($resFornecedores) > 0) {
+                $listaFornecedores = mysqli_fetch_all($resFornecedores, MYSQLI_ASSOC);
+            }
+        }
+
+        $busca = isset($_GET['busca']) ? trim($_GET['busca']) : '';
+        $campoValido = in_array($_GET['campo'] ?? '', ['nomeProduto', 'categoria', 'nomeFornecedor']) ? $_GET['campo'] : 'nomeProduto';
+
+        if ($busca !== '') {
+            $sql = "SELECT * FROM produto WHERE idUsuario = ? AND $campoValido LIKE ? ORDER BY nomeProduto ASC";
+            $stmt = @mysqli_prepare($conexao, $sql);
+            if ($stmt) {
+                $termoBusca = "%" . $busca . "%";
+                mysqli_stmt_bind_param($stmt, 'is', $idUsuario, $termoBusca);
+                mysqli_stmt_execute($stmt);
+                $resultado = mysqli_stmt_get_result($stmt);
+            }
+        } else {
+            $sql = "SELECT * FROM produto WHERE idUsuario = ? ORDER BY nomeProduto ASC";
+            $stmt = @mysqli_prepare($conexao, $sql);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'i', $idUsuario);
+                mysqli_stmt_execute($stmt);
+                $resultado = mysqli_stmt_get_result($stmt);
+            }
+        }
+
+        if (isset($resultado) && $resultado && mysqli_num_rows($resultado) > 0) {
+            $produtos = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
+        }
+        mysqli_close($conexao);
+    } catch (Throwable $e) {
+        $erroBanco = $e->getMessage();
+    }
 } else {
-    $sql = "SELECT * FROM produto WHERE idUsuario = ? ORDER BY nomeProduto ASC";
-    $stmt = mysqli_prepare($conexao, $sql);
-    mysqli_stmt_bind_param($stmt, 'i', $idUsuario);
-    mysqli_stmt_execute($stmt);
-    $resultado = mysqli_stmt_get_result($stmt);
+    $erroBanco = is_string($conexao) ? $conexao : "Falha na conexão com o banco de dados.";
 }
-
-if ($resultado && mysqli_num_rows($resultado) > 0) {
-    $produtos = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
-}
-mysqli_close($conexao);
 
 $titulo_pagina = "MVM - Catálogo de Produtos";
 require_once __DIR__ . "/../../templates/header.php";

@@ -55,26 +55,39 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 $busca = isset($_GET['busca']) ? trim($_GET['busca']) : '';
 $conexao = conectar();
 $fornecedors = [];
+$erroBanco = null;
 
-if ($busca !== '') {
-    $sql = "SELECT * FROM fornecedor WHERE idUsuario = ? AND (nomeFornecedor LIKE ? OR cnpj LIKE ? OR segmento LIKE ? OR cidade LIKE ?) ORDER BY nomeFornecedor ASC";
-    $stmt = mysqli_prepare($conexao, $sql);
-    $termoBusca = "%" . $busca . "%";
-    mysqli_stmt_bind_param($stmt, 'issss', $idUsuario, $termoBusca, $termoBusca, $termoBusca, $termoBusca);
-    mysqli_stmt_execute($stmt);
-    $resultado = mysqli_stmt_get_result($stmt);
-} else {    
-    $sql = "SELECT * FROM fornecedor WHERE idUsuario = ? ORDER BY nomeFornecedor ASC";
-    $stmt = mysqli_prepare($conexao, $sql);
-    mysqli_stmt_bind_param($stmt, 'i', $idUsuario);
-    mysqli_stmt_execute($stmt);
-    $resultado = mysqli_stmt_get_result($stmt); 
-}
+if (is_object($conexao)) {
+    try {
+        if ($busca !== '') {
+            $sql = "SELECT * FROM fornecedor WHERE idUsuario = ? AND (nomeFornecedor LIKE ? OR cnpj LIKE ? OR segmento LIKE ? OR cidade LIKE ?) ORDER BY nomeFornecedor ASC";
+            $stmt = @mysqli_prepare($conexao, $sql);
+            if ($stmt) {
+                $termoBusca = "%" . $busca . "%";
+                mysqli_stmt_bind_param($stmt, 'issss', $idUsuario, $termoBusca, $termoBusca, $termoBusca, $termoBusca);
+                mysqli_stmt_execute($stmt);
+                $resultado = mysqli_stmt_get_result($stmt);
+            }
+        } else {    
+            $sql = "SELECT * FROM fornecedor WHERE idUsuario = ? ORDER BY nomeFornecedor ASC";
+            $stmt = @mysqli_prepare($conexao, $sql);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'i', $idUsuario);
+                mysqli_stmt_execute($stmt);
+                $resultado = mysqli_stmt_get_result($stmt); 
+            }
+        }
 
-if ($resultado && mysqli_num_rows($resultado) > 0) {
-    $fornecedors = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
+        if (isset($resultado) && $resultado && mysqli_num_rows($resultado) > 0) {
+            $fornecedors = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
+        }
+        mysqli_close($conexao);
+    } catch (Throwable $e) {
+        $erroBanco = $e->getMessage();
+    }
+} else {
+    $erroBanco = is_string($conexao) ? $conexao : "Falha na conexão com o banco de dados.";
 }
-mysqli_close($conexao);
 
 $titulo_pagina = "MVM - Fornecedores";
 require_once __DIR__ . "/../../templates/header.php";

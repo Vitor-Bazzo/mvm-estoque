@@ -53,26 +53,39 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 $busca = isset($_GET['busca']) ? trim($_GET['busca']) : '';
 $conexao = conectar();
 $clientes = [];
+$erroBanco = null;
 
-if ($busca !== '') {
-    $sql = "SELECT * FROM cliente WHERE idUsuario = ? AND (nomeCliente LIKE ? OR email LIKE ? OR cidade LIKE ?) ORDER BY nomeCliente ASC";
-    $stmt = mysqli_prepare($conexao, $sql);
-    $termoBusca = "%" . $busca . "%";
-    mysqli_stmt_bind_param($stmt, 'isss', $idUsuario, $termoBusca, $termoBusca, $termoBusca);
-    mysqli_stmt_execute($stmt);
-    $resultado = mysqli_stmt_get_result($stmt);
-} else {    
-    $sql = "SELECT * FROM cliente WHERE idUsuario = ? ORDER BY nomeCliente ASC";
-    $stmt = mysqli_prepare($conexao, $sql);
-    mysqli_stmt_bind_param($stmt, 'i', $idUsuario);
-    mysqli_stmt_execute($stmt);
-    $resultado = mysqli_stmt_get_result($stmt);
-}
+if (is_object($conexao)) {
+    try {
+        if ($busca !== '') {
+            $sql = "SELECT * FROM cliente WHERE idUsuario = ? AND (nomeCliente LIKE ? OR email LIKE ? OR cidade LIKE ?) ORDER BY nomeCliente ASC";
+            $stmt = @mysqli_prepare($conexao, $sql);
+            if ($stmt) {
+                $termoBusca = "%" . $busca . "%";
+                mysqli_stmt_bind_param($stmt, 'isss', $idUsuario, $termoBusca, $termoBusca, $termoBusca);
+                mysqli_stmt_execute($stmt);
+                $resultado = mysqli_stmt_get_result($stmt);
+            }
+        } else {    
+            $sql = "SELECT * FROM cliente WHERE idUsuario = ? ORDER BY nomeCliente ASC";
+            $stmt = @mysqli_prepare($conexao, $sql);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'i', $idUsuario);
+                mysqli_stmt_execute($stmt);
+                $resultado = mysqli_stmt_get_result($stmt);
+            }
+        }
 
-if ($resultado && mysqli_num_rows($resultado) > 0) {
-    $clientes = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
+        if (isset($resultado) && $resultado && mysqli_num_rows($resultado) > 0) {
+            $clientes = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
+        }
+        mysqli_close($conexao);
+    } catch (Throwable $e) {
+        $erroBanco = $e->getMessage();
+    }
+} else {
+    $erroBanco = is_string($conexao) ? $conexao : "Falha na conexão com o banco de dados.";
 }
-mysqli_close($conexao);
 
 $titulo_pagina = "MVM - Carteira de Clientes";
 require_once __DIR__ . "/../../templates/header.php";

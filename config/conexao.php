@@ -5,24 +5,35 @@
  */
 
 function conectar() {
+    $hostServidor = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? '');
+    $hostLimpo = explode(':', $hostServidor)[0];
+    $isLocal = empty($hostLimpo) || in_array($hostLimpo, ['localhost', '127.0.0.1']);
+
     // 1. Arquivo opcional de configuração em produção (carrega automaticamente na nuvem)
     $arquivoProducao = __DIR__ . '/conexao_producao.php';
-    if (file_exists($arquivoProducao)) {
-        $hostServidor = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? '');
-        $hostLimpo = explode(':', $hostServidor)[0];
-        $isLocal = empty($hostLimpo) || in_array($hostLimpo, ['localhost', '127.0.0.1']);
-
-        // Se estiver rodando na nuvem (não localhost) ou forçado explicitamente
-        if (!$isLocal || (defined('FORCAR_PRODUCAO') && FORCAR_PRODUCAO)) {
-            require_once $arquivoProducao;
-        }
+    if (!$isLocal && file_exists($arquivoProducao)) {
+        require_once $arquivoProducao;
     }
 
-    // 2. Lê constantes ou variáveis de ambiente (com fallback automático para XAMPP local)
-    $host = defined('DB_HOST') ? DB_HOST : (getenv('DB_HOST') ?: '127.0.0.1');
-    $user = defined('DB_USER') ? DB_USER : (getenv('DB_USER') ?: 'root');
-    $pass = defined('DB_PASS') ? DB_PASS : (getenv('DB_PASS') ?: '');
-    $bd   = defined('DB_NAME') ? DB_NAME : (getenv('DB_NAME') ?: 'bdmvm');
+    if (!$isLocal) {
+        // Credenciais automáticas de produção para o InfinityFree (mvmcontrol.wuaze.com)
+        $hostPadrao = 'sql311.infinityfree.com';
+        $userPadrao = 'if0_42798246';
+        $passPadrao = 'DA3oa2pkLHi';
+        $bdPadrao   = 'if0_42798246_bdmvm';
+    } else {
+        // Credenciais locais XAMPP
+        $hostPadrao = '127.0.0.1';
+        $userPadrao = 'root';
+        $passPadrao = '';
+        $bdPadrao   = 'bdmvm';
+    }
+
+    // 2. Lê constantes ou variáveis de ambiente (com fallback para produção/local)
+    $host = defined('DB_HOST') ? DB_HOST : (getenv('DB_HOST') ?: $hostPadrao);
+    $user = defined('DB_USER') ? DB_USER : (getenv('DB_USER') ?: $userPadrao);
+    $pass = defined('DB_PASS') ? DB_PASS : (getenv('DB_PASS') ?: $passPadrao);
+    $bd   = defined('DB_NAME') ? DB_NAME : (getenv('DB_NAME') ?: $bdPadrao);
     $port = defined('DB_PORT') ? (int)DB_PORT : (getenv('DB_PORT') ? (int)getenv('DB_PORT') : 3306);
 
     // Se for localhost/127.0.0.1, tenta ambos caso o MySQL esteja em socket ou IP
