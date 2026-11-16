@@ -1,17 +1,37 @@
 <?php
 /**
- * Conexão com o Banco de Dados MySQL
- * Sistema MVM - Suporta Ambiente Local (XAMPP) e Hospedagem em Nuvem (InfinityFree / cPanel / VPS)
+ * Conexão com o Banco de Dados MySQL + Fallback Cloud Serverless (Vercel SQLite3)
+ * Sistema MVM - Suporta Ambiente Local (XAMPP), Vercel Serverless e Hospedagem em Nuvem
  */
+
+require_once __DIR__ . '/cloud_db.php';
+
+function mvm_is_vercel_env(): bool {
+    $host = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? '');
+    return defined('MVM_VERCEL_ROUTER')
+        || getenv('VERCEL') === '1'
+        || getenv('VERCEL_ENV') !== false
+        || stripos($host, '.vercel.app') !== false;
+}
 
 function conectar() {
     $hostServidor = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? '');
     $hostLimpo = explode(':', $hostServidor)[0];
     $isLocal = empty($hostLimpo) || in_array($hostLimpo, ['localhost', '127.0.0.1']);
+    $isVercel = mvm_is_vercel_env();
 
-    // 1. Arquivo opcional de configuração em produção (carrega automaticamente na nuvem)
+    // Se estiver na Vercel sem DB_HOST externo configurado, usa imediatamente o motor Cloud Serverless (SQLite3 em /tmp)
+    if ($isVercel && !getenv('DB_HOST') && !defined('DB_HOST')) {
+        try {
+            return new MvmCloudDB(sys_get_temp_dir() . '/bdmvm_cloud.sqlite');
+        } catch (Throwable $e) {
+            return "Erro ao iniciar banco em nuvem: " . $e->getMessage();
+        }
+    }
+
+    // 1. Arquivo opcional de configuração em produção (carrega automaticamente fora do localhost e fora da Vercel sem DB externo)
     $arquivoProducao = __DIR__ . '/conexao_producao.php';
-    if (!$isLocal && file_exists($arquivoProducao)) {
+    if (!$isLocal && !$isVercel && file_exists($arquivoProducao)) {
         require_once $arquivoProducao;
     }
 
@@ -70,6 +90,15 @@ function conectar() {
             } catch (Throwable $e) {
                 $ultimoErro = $e->getMessage();
             }
+        }
+    }
+
+    // Fallback automático para MvmCloudDB (SQLite3) caso o MySQL não esteja acessível na nuvem
+    if (extension_loaded('pdo_sqlite')) {
+        try {
+            return new MvmCloudDB(sys_get_temp_dir() . '/bdmvm_cloud.sqlite');
+        } catch (Throwable $e) {
+            $ultimoErro = $e->getMessage();
         }
     }
 
@@ -257,27 +286,85 @@ function obterIdUsuarioLogado() {
     if (!empty($_SESSION['usuarioLogado'])) {
         $conexao = conectar();
         if (!is_string($conexao)) {
-            $stmt = mysqli_prepare($conexao, "SELECT idUsuario FROM usuario WHERE nomeUsuario = ? OR emailUsuario = ?");
+            $stmt = mvm_db_prepare($conexao, "SELECT idUsuario FROM usuario WHERE nomeUsuario = ? OR emailUsuario = ?");
             if ($stmt) {
-                mysqli_stmt_bind_param($stmt, "ss", $_SESSION['usuarioLogado'], $_SESSION['usuarioLogado']);
-                mysqli_stmt_execute($stmt);
-                $res = mysqli_stmt_get_result($stmt);
-                if ($res && $row = mysqli_fetch_assoc($res)) {
+                mvm_db_stmt_bind_param($stmt, "ss", $_SESSION['usuarioLogado'], $_SESSION['usuarioLogado']);
+                mvm_db_stmt_execute($stmt);
+                $res = mvm_db_stmt_get_result($stmt);
+                if ($res && $row = mvm_db_fetch_assoc($res)) {
                     $_SESSION['idUsuario'] = (int)$row['idUsuario'];
-                    mysqli_close($conexao);
+                    mvm_db_close($conexao);
                     return (int)$row['idUsuario'];
                 }
             }
-            mysqli_close($conexao);
+            mvm_db_close($conexao);
         }
     }
     return 0;
 }
 
 /**
- * Inicialização segura de sessão com proteção de cookies
+ * Chave HMAC para assinatura do cookie de sessão stateless (Vercel Serverless)
+ */
+function mvm_obter_chave_sessao(): string {
+    return getenv('APP_KEY') ?: 'mvm_estoque_serverless_hmac_secret_2026_v1';
+}
+
+/**
+ * Sincroniza dados essenciais da $_SESSION em cookie assinado (HMAC-SHA256) para persistência em ambientes Serverless
+ */
+function mvm_sincronizar_cookie_sessao(): void {
+    if (headers_sent()) {
+        return;
+    }
+    $isSecure = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+
+    if (empty($_SESSION['usuarioLogado']) && empty($_SESSION['csrf_token'])) {
+        if (!empty($_COOKIE['mvm_vercel_sess'])) {
+            @setcookie('mvm_vercel_sess', '', [
+                'expires'  => time() - 42000,
+                'path'     => '/',
+                'secure'   => $isSecure,
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]);
+        }
+        return;
+    }
+
+    $chavesPersistentes = [
+        'usuarioLogado', 'idUsuario', 'emailUsuario', 'planoUsuario',
+        'roleUsuario', 'csrf_token', 'flash_dashboard', 'flash_plano', 'flash_movimento'
+    ];
+    $payload = [];
+    foreach ($chavesPersistentes as $k) {
+        if (isset($_SESSION[$k])) {
+            $payload[$k] = $_SESSION[$k];
+        }
+    }
+
+    $json = json_encode($payload, JSON_UNESCAPED_UNICODE);
+    $b64 = rtrim(strtr(base64_encode($json), '+/', '-_'), '=');
+    $sig = hash_hmac('sha256', $b64, mvm_obter_chave_sessao());
+    $valorCookie = $b64 . '.' . $sig;
+
+    if (($_COOKIE['mvm_vercel_sess'] ?? '') !== $valorCookie) {
+        @setcookie('mvm_vercel_sess', $valorCookie, [
+            'expires'  => time() + 86400 * 7,
+            'path'     => '/',
+            'secure'   => $isSecure,
+            'httponly' => true,
+            'samesite' => 'Lax'
+        ]);
+    }
+}
+
+/**
+ * Inicialização segura de sessão com proteção de cookies e fallback stateless para Serverless
  */
 function iniciarSessaoSegura() {
+    static $callbackRegistrado = false;
     if (session_status() === PHP_SESSION_NONE) {
         $savePath = session_save_path();
         if (empty($savePath) || !@is_dir($savePath) || !@is_writable($savePath)) {
@@ -287,16 +374,43 @@ function iniciarSessaoSegura() {
             }
         }
         if (!headers_sent()) {
+            $isSecure = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on')
+                || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
             session_set_cookie_params([
                 'lifetime' => 0,
                 'path'     => '/',
                 'domain'   => '',
-                'secure'   => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+                'secure'   => $isSecure,
                 'httponly' => true,
                 'samesite' => 'Lax'
             ]);
         }
         @session_start();
+    }
+
+    // Restaura sessão do cookie assinado caso a instância Serverless tenha trocado de container
+    if (empty($_SESSION['usuarioLogado']) && !empty($_COOKIE['mvm_vercel_sess'])) {
+        $partes = explode('.', (string)$_COOKIE['mvm_vercel_sess'], 2);
+        if (count($partes) === 2) {
+            [$b64, $sig] = $partes;
+            $sigEsperada = hash_hmac('sha256', $b64, mvm_obter_chave_sessao());
+            if (hash_equals($sigEsperada, $sig)) {
+                $json = base64_decode(strtr($b64, '-_', '+/'), true);
+                $dados = $json ? json_decode($json, true) : null;
+                if (is_array($dados)) {
+                    foreach ($dados as $k => $v) {
+                        if (!isset($_SESSION[$k])) {
+                            $_SESSION[$k] = $v;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (!$callbackRegistrado && function_exists('header_register_callback')) {
+        $callbackRegistrado = true;
+        @header_register_callback('mvm_sincronizar_cookie_sessao');
     }
 }
 
@@ -346,11 +460,16 @@ function enviarHeadersSeguranca() {
 }
 
 /**
- * Retorna a URL base do projeto (compatível com XAMPP em subpastas e servidores de produção)
+ * Retorna a URL base do projeto (compatível com XAMPP em subpastas, Vercel e servidores de produção)
  */
 function obterBaseUrl() {
     static $baseUrl = null;
     if ($baseUrl !== null) {
+        return $baseUrl;
+    }
+
+    if (mvm_is_vercel_env()) {
+        $baseUrl = '';
         return $baseUrl;
     }
 

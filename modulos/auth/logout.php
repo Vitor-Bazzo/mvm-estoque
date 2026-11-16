@@ -12,6 +12,7 @@ if (ini_get("session.use_cookies")) {
         $params["secure"], $params["httponly"]
     );
 }
+@setcookie('mvm_vercel_sess', '', time() - 42000, '/');
 session_destroy();
 header('Location: ' . url('modulos/auth/login.php'));
 exit;
