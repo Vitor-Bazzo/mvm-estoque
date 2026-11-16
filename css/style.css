@@ -45,7 +45,11 @@
 
   --radius-sm: 8px;
   --radius: 12px;
+  --radius-md: 12px;
   --radius-lg: 16px;
+  --bg-card: var(--card);
+  --text-main: var(--text);
+  --muted: var(--text-muted);
   --sidebar-width: 250px;
   --sidebar-collapsed-width: 72px;
 }
@@ -89,6 +93,9 @@
   --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.5), 0 1px 2px -1px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 10px -1px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 14px 28px -4px rgba(0, 0, 0, 0.7);
+  --bg-card: var(--card);
+  --text-main: var(--text);
+  --muted: var(--text-muted);
 }
 
 /* =====================================================================
@@ -658,7 +665,8 @@ main {
 }
 
 /* Botões do Design System */
-.btn-primary {
+.btn-primary,
+.cta-button {
   background: var(--primary);
   color: #ffffff;
   border: none;
@@ -675,7 +683,8 @@ main {
   text-decoration: none;
 }
 
-.btn-primary:hover {
+.btn-primary:hover,
+.cta-button:hover {
   background: var(--primary-hover);
   color: #ffffff;
   transform: translateY(-1px);

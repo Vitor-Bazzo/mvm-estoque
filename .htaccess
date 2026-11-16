@@ -48,14 +48,17 @@ Options -Indexes
     RewriteRule ^movimento_excluir\.php$ modulos/movimentos/movimento_excluir.php [L,QSA]
     RewriteRule ^recibo\.php$ modulos/movimentos/recibo.php [L,QSA]
 
-    # Módulos: Relatórios
+    # Módulos: Relatórios e Planos
     RewriteRule ^kardex\.php$ modulos/relatorios/kardex.php [L,QSA]
     RewriteRule ^etiquetas\.php$ modulos/relatorios/etiquetas.php [L,QSA]
+    RewriteRule ^planos\.php$ modulos/planos/planos.php [L,QSA]
 
     # Módulos: Autenticação
     RewriteRule ^login\.php$ modulos/auth/login.php [L,QSA]
     RewriteRule ^logout\.php$ modulos/auth/logout.php [L,QSA]
     RewriteRule ^criar_conta\.php$ modulos/auth/criar_conta.php [L,QSA]
+    RewriteRule ^esqueci_senha\.php$ modulos/auth/esqueci_senha.php [L,QSA]
+    RewriteRule ^redefinir_senha\.php$ modulos/auth/redefinir_senha.php [L,QSA]
 
     # Scripts & Automação
     RewriteRule ^cron_alertas\.php$ scripts/cron_alertas.php [L,QSA]

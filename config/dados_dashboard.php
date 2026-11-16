@@ -76,7 +76,7 @@ function obterDadosDashboardBI($idUsuario = null) {
         }
     }
 
-    // 1.1 Produtos com Estoque Baixo (< 20 unidades) pertencentes ao Usuário
+    // 1.1 Produtos com Estoque Baixo (abaixo ou igual ao estoqueMinimo) pertencentes ao Usuário
     $sqlBaixo = "
         SELECT 
             idProduto, 
@@ -84,11 +84,12 @@ function obterDadosDashboardBI($idUsuario = null) {
             categoria, 
             preco, 
             quantidade, 
+            estoqueMinimo,
             imagem, 
             nomeFornecedor
         FROM produto
-        WHERE idUsuario = ? AND quantidade < 20
-        ORDER BY quantidade ASC, nomeProduto ASC
+        WHERE idUsuario = ? AND quantidade <= COALESCE(NULLIF(estoqueMinimo, 0), 10)
+        ORDER BY (quantidade - COALESCE(NULLIF(estoqueMinimo, 0), 10)) ASC, quantidade ASC, nomeProduto ASC
     ";
     if ($stmtBaixo = mysqli_prepare($conexao, $sqlBaixo)) {
         mysqli_stmt_bind_param($stmtBaixo, "i", $idUsuario);
@@ -102,6 +103,7 @@ function obterDadosDashboardBI($idUsuario = null) {
                     'categoria'      => $prod['categoria'] ?: 'Sem Categoria',
                     'preco'          => (float)$prod['preco'],
                     'quantidade'     => (int)$prod['quantidade'],
+                    'estoqueMinimo'  => (int)($prod['estoqueMinimo'] ?: 10),
                     'imagem'         => $prod['imagem'],
                     'nomeFornecedor' => $prod['nomeFornecedor'] ?: 'Não informado'
                 ];
@@ -118,7 +120,7 @@ function obterDadosDashboardBI($idUsuario = null) {
             p.categoria,
             p.preco,
             COALESCE(SUM(m.quantidade), 0) AS total_vendido,
-            COALESCE(SUM(m.quantidade * p.preco), 0) AS total_faturado
+            COALESCE(SUM(CASE WHEN m.valorTotal > 0 THEN m.valorTotal ELSE m.quantidade * COALESCE(NULLIF(m.precoUnitario, 0), p.preco) END), 0) AS total_faturado
         FROM movimento m
         INNER JOIN produto p ON p.idProduto = m.idProduto AND p.idUsuario = m.idUsuario
         WHERE m.idUsuario = ? AND m.tipoMovimento = 'SAIDA' AND m.dataDevolucao IS NULL
@@ -182,7 +184,7 @@ function obterDadosDashboardBI($idUsuario = null) {
         SELECT 
             COALESCE(NULLIF(TRIM(p.categoria), ''), 'Outros') AS cat,
             COALESCE(SUM(m.quantidade), 0) AS total_vendido,
-            COALESCE(SUM(m.quantidade * p.preco), 0) AS total_faturado
+            COALESCE(SUM(CASE WHEN m.valorTotal > 0 THEN m.valorTotal ELSE m.quantidade * COALESCE(NULLIF(m.precoUnitario, 0), p.preco) END), 0) AS total_faturado
         FROM movimento m
         INNER JOIN produto p ON p.idProduto = m.idProduto AND p.idUsuario = m.idUsuario
         WHERE m.idUsuario = ? AND m.tipoMovimento = 'SAIDA' AND m.dataDevolucao IS NULL
@@ -210,14 +212,14 @@ function obterDadosDashboardBI($idUsuario = null) {
         }
     }
 
-    // 5. Gráfico 3: Vendas diárias em Reais (R$) do Usuário
+    // 5. Gráfico 3: Vendas diárias em Reais (R$) do Usuário (usando precoUnitario/valorTotal e custoUnitario congelados no ato da venda)
     $sqlDiario = "
         SELECT 
             DATE(m.dataMovimento) AS data_dia,
             DATE_FORMAT(m.dataMovimento, '%d/%m/%Y') AS data_formatada,
             DATE_FORMAT(m.dataMovimento, '%d/%m') AS data_curta,
-            COALESCE(SUM(m.quantidade * p.preco), 0) AS total_reais,
-            COALESCE(SUM(m.quantidade * p.precoCusto), 0) AS total_custo,
+            COALESCE(SUM(CASE WHEN m.valorTotal > 0 THEN m.valorTotal ELSE m.quantidade * COALESCE(NULLIF(m.precoUnitario, 0), p.preco) END), 0) AS total_reais,
+            COALESCE(SUM(m.quantidade * COALESCE(NULLIF(m.custoUnitario, 0), p.precoCusto)), 0) AS total_custo,
             COALESCE(SUM(m.quantidade), 0) AS total_itens,
             COUNT(m.idMovimento) AS total_pedidos
         FROM movimento m
@@ -267,7 +269,7 @@ function obterDadosDashboardBI($idUsuario = null) {
     $sqlCurva = "
         SELECT 
             p.idProduto, p.nomeProduto, p.categoria, p.preco, p.quantidade,
-            COALESCE(SUM(CASE WHEN m.tipoMovimento = 'SAIDA' AND m.dataDevolucao IS NULL THEN m.quantidade * p.preco ELSE 0 END), 0) AS faturamento_produto,
+            COALESCE(SUM(CASE WHEN m.tipoMovimento = 'SAIDA' AND m.dataDevolucao IS NULL THEN (CASE WHEN m.valorTotal > 0 THEN m.valorTotal ELSE m.quantidade * COALESCE(NULLIF(m.precoUnitario, 0), p.preco) END) ELSE 0 END), 0) AS faturamento_produto,
             (p.quantidade * p.preco) AS valor_estoque
         FROM produto p
         LEFT JOIN movimento m ON m.idProduto = p.idProduto AND m.idUsuario = p.idUsuario

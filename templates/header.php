@@ -112,6 +112,10 @@ $paginaAtual = basename($_SERVER['PHP_SELF']);
                 </a>
 
                 <span class="nav-label">Institucional</span>
+                <a href="<?= url('modulos/planos/planos.php') ?>" class="<?= $paginaAtual === 'planos.php' ? 'active' : '' ?>">
+                    <span class="nav-icon">💎</span>
+                    <span class="nav-text">Planos &amp; Assinatura</span>
+                </a>
                 <a href="<?= url('docs/mascote.php') ?>" class="<?= $paginaAtual === 'mascote.php' ? 'active' : '' ?>">
                     <span class="nav-icon">🐜</span>
                     <span class="nav-text">Mascote Oficial</span>
@@ -121,6 +125,10 @@ $paginaAtual = basename($_SERVER['PHP_SELF']);
                 <a href="<?= url('modulos/auth/login.php') ?>" class="<?= $paginaAtual === 'login.php' ? 'active' : '' ?>">
                     <span class="nav-icon">🔐</span>
                     <span class="nav-text">Entrar no Sistema</span>
+                </a>
+                <a href="<?= url('modulos/planos/planos.php') ?>" class="<?= $paginaAtual === 'planos.php' ? 'active' : '' ?>">
+                    <span class="nav-icon">💎</span>
+                    <span class="nav-text">Planos &amp; Preços</span>
                 </a>
                 <a href="<?= url('docs/mascote.php') ?>" class="<?= $paginaAtual === 'mascote.php' ? 'active' : '' ?>">
                     <span class="nav-icon">🐜</span>
@@ -132,6 +140,11 @@ $paginaAtual = basename($_SERVER['PHP_SELF']);
         <!-- RODAPÉ DA SIDEBAR COM PERFIL E TEMA CLARO/ESCURO -->
         <div class="sidebar-footer">
             <?php if (isset($_SESSION['usuarioLogado'])): ?>
+                <?php
+                    $planoBadge = strtoupper($_SESSION['planoUsuario'] ?? 'PREMIUM');
+                    $iconePlano = $planoBadge === 'PREMIUM' ? '👑' : ($planoBadge === 'PADRAO' ? '⭐' : '📦');
+                    $corPlano = $planoBadge === 'PREMIUM' ? '#f59e0b' : ($planoBadge === 'PADRAO' ? '#38bdf8' : '#94a3b8');
+                ?>
                 <div class="user-profile-card">
                     <div class="user-info">
                         <div class="user-avatar" title="<?= htmlspecialchars($_SESSION['usuarioLogado']) ?>">
@@ -139,7 +152,12 @@ $paginaAtual = basename($_SERVER['PHP_SELF']);
                         </div>
                         <div class="user-names">
                             <div class="user-name-title" title="<?= htmlspecialchars($_SESSION['emailUsuario'] ?? '') ?>"><?= htmlspecialchars($_SESSION['usuarioLogado']) ?></div>
-                            <div class="user-role"><?= htmlspecialchars($_SESSION['roleUsuario'] ?? ((strtolower($_SESSION['usuarioLogado']) === 'admin') ? 'Administrador' : 'Operador')) ?></div>
+                            <div class="user-role" style="display: flex; align-items: center; gap: 5px;">
+                                <span><?= htmlspecialchars($_SESSION['roleUsuario'] ?? ((strtolower($_SESSION['usuarioLogado']) === 'admin') ? 'Administrador' : 'Operador')) ?></span>
+                                <a href="<?= url('modulos/planos/planos.php') ?>" style="color: <?= $corPlano ?>; font-weight: 800; font-size: 9.5px; text-decoration: none;" title="Plano Ativo (Clique para gerenciar)">
+                                    &bull; <?= $iconePlano ?> <?= htmlspecialchars($planoBadge) ?>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -27,11 +27,31 @@ $idUsuario = obterIdUsuarioLogado();
 
 if ($id > 0) {
     $conexao = conectar();
+    $nomeForn = null;
+    $stmtBusca = mysqli_prepare($conexao, "SELECT nomeFornecedor FROM fornecedor WHERE idFornecedor = ? AND idUsuario = ?");
+    if ($stmtBusca) {
+        mysqli_stmt_bind_param($stmtBusca, "ii", $id, $idUsuario);
+        mysqli_stmt_execute($stmtBusca);
+        $resBusca = mysqli_stmt_get_result($stmtBusca);
+        if ($rowF = mysqli_fetch_assoc($resBusca)) {
+            $nomeForn = $rowF['nomeFornecedor'];
+        }
+        mysqli_stmt_close($stmtBusca);
+    }
+
     $sql = "DELETE FROM fornecedor WHERE idFornecedor = ? AND idUsuario = ?";
     $stmt = mysqli_prepare($conexao, $sql);
     mysqli_stmt_bind_param($stmt, "ii", $id, $idUsuario);
     
     if (mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) > 0) {
+        if (!empty($nomeForn)) {
+            $stmtClean = mysqli_prepare($conexao, "UPDATE produto SET nomeFornecedor = NULL WHERE nomeFornecedor = ? AND idUsuario = ?");
+            if ($stmtClean) {
+                mysqli_stmt_bind_param($stmtClean, "si", $nomeForn, $idUsuario);
+                mysqli_stmt_execute($stmtClean);
+                mysqli_stmt_close($stmtClean);
+            }
+        }
         $_SESSION['flash_mensagem'] = ['tipo' => 'sucesso', 'texto' => 'Fornecedor excluído com sucesso!'];
     } else {
         $_SESSION['flash_mensagem'] = ['tipo' => 'erro', 'texto' => 'Não foi possível excluir o fornecedor ou permissão negada.'];

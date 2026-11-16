@@ -15,7 +15,7 @@ $conexao = conectar();
 
 // 1. Lista de produtos para o seletor
 $listaProdutos = [];
-$stmtProds = mysqli_prepare($conexao, "SELECT idProduto, nomeProduto, categoria, preco, quantidade, localizacao FROM produto WHERE idUsuario = ? ORDER BY nomeProduto ASC");
+$stmtProds = mysqli_prepare($conexao, "SELECT idProduto, nomeProduto, categoria, preco, precoCusto, quantidade, localizacao FROM produto WHERE idUsuario = ? ORDER BY nomeProduto ASC");
 if ($stmtProds) {
     mysqli_stmt_bind_param($stmtProds, "i", $idUsuario);
     mysqli_stmt_execute($stmtProds);
@@ -53,7 +53,7 @@ if ($idProdutoSelecionado > 0 && $produtoAtual) {
     $stmtTodos = mysqli_prepare($conexao, "
         SELECT 
             m.idMovimento, m.codigoPedido, m.tipoMovimento, m.quantidade, m.observacao,
-            m.dataMovimento, m.dataDevolucao, m.lote, m.dataValidade,
+            m.dataMovimento, m.dataDevolucao, m.lote, m.dataValidade, m.motivoAjuste,
             c.nomeCliente, f.nomeFornecedor
         FROM movimento m
         LEFT JOIN cliente c ON c.idCliente = m.idCliente
@@ -269,19 +269,22 @@ require_once __DIR__ . "/../../templates/header.php";
             <h1>Ficha Kardex</h1>
             <p>Histórico de movimentações e saldo em estoque do produto</p>
         </div>
-        <div class="page-header-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <div class="page-header-actions" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
             <a href="<?= url('exportacao/relatorio_kardex_pdf.php') ?>?idProduto=<?= $idProdutoSelecionado ?>&dataInicio=<?= urlencode($dataInicio) ?>&dataFim=<?= urlencode($dataFim) ?>" target="_blank" class="btn-secondary" title="Gerar Livro Oficial Kardex em PDF">
                 <span>📄</span> Kardex (PDF)
             </a>
             <a href="<?= url('exportacao/relatorio_kardex_excel.php') ?>?idProduto=<?= $idProdutoSelecionado ?>&dataInicio=<?= urlencode($dataInicio) ?>&dataFim=<?= urlencode($dataFim) ?>" class="btn-secondary" title="Exportar Kardex em planilha Excel (.xlsx)">
                 <span>📊</span> Kardex (.xlsx)
             </a>
-            <a href="<?= url('exportacao/relatorio_balanco_pdf.php') ?>" target="_blank" class="btn-secondary" title="Gerar Balanço Mensal Oficial em PDF">
-                <span>📑</span> Balanço (PDF)
-            </a>
-            <a href="<?= url('exportacao/relatorio_balanco_excel.php') ?>" class="btn-secondary" title="Exportar Balanço Mensal em planilha Excel (.xlsx)">
-                <span>📈</span> Balanço (.xlsx)
-            </a>
+            <div style="display: inline-flex; align-items: center; gap: 4px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 3px 6px;">
+                <input type="month" id="mes-balanco-kardex" value="<?= date('Y-m') ?>" style="border: none; background: transparent; color: var(--text); font-size: 12px; font-weight: 600; outline: none; padding: 3px 4px;" title="Selecione o mês de referência para o Balanço">
+                <a href="<?= url('exportacao/relatorio_balanco_pdf.php') ?>" onclick="this.href='<?= url('exportacao/relatorio_balanco_pdf.php') ?>?mes=' + document.getElementById('mes-balanco-kardex').value" target="_blank" class="btn-secondary" style="padding: 5px 10px; border: none;" title="Gerar Balanço Mensal Oficial em PDF">
+                    <span>📑</span> Balanço (PDF)
+                </a>
+                <a href="<?= url('exportacao/relatorio_balanco_excel.php') ?>" onclick="this.href='<?= url('exportacao/relatorio_balanco_excel.php') ?>?mes=' + document.getElementById('mes-balanco-kardex').value" class="btn-secondary" style="padding: 5px 10px; border: none;" title="Exportar Balanço Mensal em planilha Excel (.xlsx)">
+                    <span>📈</span> .xlsx
+                </a>
+            </div>
             <button type="button" onclick="window.print()" class="btn-secondary" title="Imprimir">
                 <span>🖨️</span> Imprimir
             </button>
@@ -350,11 +353,29 @@ require_once __DIR__ . "/../../templates/header.php";
             </div>
 
             <div class="k-stat-card">
-                <span class="k-stat-label">Valor em Estoque</span>
+                <span class="k-stat-label">Valor em Estoque (Venda)</span>
                 <strong class="k-stat-value">
                     R$ <?= number_format(((int)$produtoAtual['quantidade'] * (float)$produtoAtual['preco']), 2, ',', '.') ?>
                 </strong>
-                <span class="k-stat-sub">Preço unit: R$ <?= number_format((float)$produtoAtual['preco'], 2, ',', '.') ?></span>
+                <span class="k-stat-sub">Preço venda: R$ <?= number_format((float)$produtoAtual['preco'], 2, ',', '.') ?></span>
+            </div>
+
+            <?php
+                $custoUnit = (float)($produtoAtual['precoCusto'] ?? 0);
+                if ($custoUnit <= 0) {
+                    $custoUnit = round((float)$produtoAtual['preco'] * 0.60, 2);
+                }
+                $custoTotalEst = (int)$produtoAtual['quantidade'] * $custoUnit;
+                $margemUnit = (float)$produtoAtual['preco'] > 0
+                    ? round((((float)$produtoAtual['preco'] - $custoUnit) / (float)$produtoAtual['preco']) * 100, 1)
+                    : 0;
+            ?>
+            <div class="k-stat-card">
+                <span class="k-stat-label">Custo Médio (CMP) &amp; Margem</span>
+                <strong class="k-stat-value" style="color: var(--primary);">
+                    R$ <?= number_format($custoTotalEst, 2, ',', '.') ?>
+                </strong>
+                <span class="k-stat-sub">CMP: R$ <?= number_format($custoUnit, 2, ',', '.') ?> &bull; Margem: <?= $margemUnit ?>%</span>
             </div>
         </div>
 
@@ -431,6 +452,11 @@ require_once __DIR__ . "/../../templates/header.php";
                                         <span class="status-pill <?= $badgeClass ?>">
                                             <?= $badgeTexto ?>
                                         </span>
+                                        <?php if (!empty($item['motivoAjuste'])): ?>
+                                            <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">
+                                                ⚖️ <?= htmlspecialchars($item['motivoAjuste']) ?>
+                                            </div>
+                                        <?php endif; ?>
                                     </td>
 
                                     <!-- Origem / Destino -->

@@ -16,9 +16,14 @@ window.dispararAnimacaoCaminhao = function (dados) {
     const produtoNome = dados?.produto || 'Produto';
     const quantidade = dados?.quantidade || 1;
     const novaQtd = dados?.novaQuantidade !== undefined ? ` (Total atual: ${dados.novaQuantidade} un.)` : '';
+    const isEstornoEntrada = dados?.tipo === 'ENTRADA';
+    const badgeTexto = isEstornoEntrada ? 'Estorno de Carga' : 'Estoque Carregado';
+    const tituloTexto = isEstornoEntrada ? 'Estorno ao Fornecedor Efetuado!' : 'Reposição Efetuada com Sucesso!';
     const subtitulo = dados?.origem === 'exclusao_venda' 
         ? `Venda cancelada • +${quantidade} un. de ${produtoNome} repostas no estoque${novaQtd}`
-        : `Devolução concluída • +${quantidade} un. de ${produtoNome} recarregadas no estoque${novaQtd}`;
+        : (isEstornoEntrada
+            ? `Devolução ao fornecedor • -${quantidade} un. de ${produtoNome} baixadas do estoque${novaQtd}`
+            : `Devolução concluída • +${quantidade} un. de ${produtoNome} recarregadas no estoque${novaQtd}`);
 
     const overlay = document.createElement('div');
     overlay.className = 'truck-overlay';
@@ -27,8 +32,8 @@ window.dispararAnimacaoCaminhao = function (dados) {
         <div class="truck-notification" onclick="this.parentElement.remove()" title="Clique para fechar">
             <div class="truck-notif-icon">🚚</div>
             <div class="truck-notif-content">
-                <span class="truck-notif-badge">Estoque Carregado</span>
-                <strong>Reposição Efetuada com Sucesso!</strong>
+                <span class="truck-notif-badge">${badgeTexto}</span>
+                <strong>${tituloTexto}</strong>
                 <span>${subtitulo}</span>
             </div>
             <div class="truck-notif-close">✕</div>

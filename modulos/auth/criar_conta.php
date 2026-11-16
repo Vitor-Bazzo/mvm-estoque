@@ -14,6 +14,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $usuario = trim($_POST['usuario']);
         $email = trim($_POST['email']);
         $senha = $_POST['senha'];
+        $planoEscolhido = in_array(strtoupper($_POST['plano'] ?? ''), ['ESSENCIAL', 'PADRAO', 'PREMIUM']) ? strtoupper($_POST['plano']) : 'ESSENCIAL';
 
         if (strlen($senha) < 6) {
             $mensagemerro = "A senha deve conter no mínimo 6 caracteres.";
@@ -35,9 +36,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 } else {
                     mysqli_stmt_close($stmtCheck);
                     $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
-                    $sqlInsert = "INSERT INTO usuario (nomeUsuario, emailUsuario, senhaUsuario) VALUES (?, ?, ?)";
+                    $sqlInsert = "INSERT INTO usuario (nomeUsuario, emailUsuario, senhaUsuario, planoAssinatura, cicloPlano, validadePlano) VALUES (?, ?, ?, ?, 'MENSAL', DATE_ADD(CURDATE(), INTERVAL 30 DAY))";
                     $stmtInsert = mysqli_prepare($conexao, $sqlInsert);
-                    mysqli_stmt_bind_param($stmtInsert, "sss", $usuario, $email, $senhaHash);
+                    mysqli_stmt_bind_param($stmtInsert, "ssss", $usuario, $email, $senhaHash, $planoEscolhido);
                     
                     if (mysqli_stmt_execute($stmtInsert)) {
                         $novoId = mysqli_insert_id($conexao);
@@ -51,6 +52,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         $_SESSION['usuarioLogado'] = $usuario;
                         $_SESSION['emailUsuario'] = $email;
                         $_SESSION['idUsuario'] = $novoId;
+                        $_SESSION['planoUsuario'] = $planoEscolhido;
                         $_SESSION['roleUsuario'] = (strtolower($usuario) === 'admin' || stripos($email, 'admin') !== false) ? 'Administrador' : 'Operador';
                         $_SESSION['flash_dashboard'] = [
                             'tipo' => 'sucesso',
@@ -112,6 +114,16 @@ require_once __DIR__ . "/../../templates/header.php";
             <div class="form-group">
                 <label for="confirmPassword">Confirmar Senha *</label>
                 <input type="password" id="confirmPassword" required placeholder="Digite a senha novamente">
+            </div>
+
+            <?php $planoGet = strtoupper($_GET['plano'] ?? 'ESSENCIAL'); ?>
+            <div class="form-group">
+                <label for="plano">Plano de Assinatura MVM *</label>
+                <select id="plano" name="plano" required>
+                    <option value="ESSENCIAL" <?= $planoGet === 'ESSENCIAL' ? 'selected' : '' ?>>📦 Essencial (R$ 29,90/mês) — Até 100 produtos</option>
+                    <option value="PADRAO" <?= $planoGet === 'PADRAO' ? 'selected' : '' ?>>⭐ Padrão (R$ 59,90/mês) — Até 1.000 produtos + Kardex &amp; FEFO</option>
+                    <option value="PREMIUM" <?= $planoGet === 'PREMIUM' ? 'selected' : '' ?>>👑 Premium (R$ 99,90/mês) — Ilimitado + Power BI &amp; WMS</option>
+                </select>
             </div>
 
             <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-size: 14px; margin-top: 8px;">

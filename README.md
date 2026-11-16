@@ -64,9 +64,9 @@ Construído com foco em **agilidade operacional**, o sistema conta com uma inter
    - Crie uma base de dados chamada `bdmvm` com collation `utf8mb4_general_ci`.
    - Clique em **Importar** e selecione o arquivo:
      ```
-     sql/bdmvm_backup_completo.sql
+     sql/schema_completo.sql
      ```
-   - Execute a importação.
+   - Execute a importação (ou acesse `http://localhost/mvm/instalar.php` para instalação automática).
 
 4. **Acessar o Sistema:**
    - Acesse no navegador: `http://localhost/mvm/` (ou caminho equivalente configurado).

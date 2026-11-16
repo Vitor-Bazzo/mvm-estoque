@@ -262,3 +262,119 @@ function enviarEmailCompra(
         return $mail->ErrorInfo ?: $e->getMessage();
     }
 }
+
+/**
+ * Envia ao usuário o código e o link de recuperação de senha ("Esqueci Minha Senha").
+ *
+ * @param string $emailDestino E-mail do usuário
+ * @param string $nomeUsuario  Nome do usuário
+ * @param string $codigo       Código numérico de 6 dígitos
+ * @param string $linkDireto   URL direta para redefinição da senha
+ * @return true|string         true em caso de sucesso ou mensagem de erro
+ */
+function enviarEmailRecuperacaoSenha($emailDestino, $nomeUsuario, $codigo, $linkDireto) {
+    if (!defined('MVM_SMTP_HOST')) {
+        $arquivo = __DIR__ . '/email_credenciais.php';
+        if (!file_exists($arquivo)) {
+            return "Arquivo config/email_credenciais.php não encontrado.";
+        }
+        require_once $arquivo;
+    }
+
+    if (defined('MVM_SMTP_USUARIO') && MVM_SMTP_USUARIO === 'seu_email@gmail.com') {
+        return "Configure o email e a senha em config/email_credenciais.php.";
+    }
+
+    if (!filter_var($emailDestino, FILTER_VALIDATE_EMAIL)) {
+        return "O e-mail cadastrado do usuário é inválido.";
+    }
+
+    $nomeHtml = htmlspecialchars($nomeUsuario);
+    $codigoHtml = htmlspecialchars($codigo);
+    $linkHtml = htmlspecialchars($linkDireto);
+    $dataHora = date('d/m/Y \à\s H:i');
+
+    $corpoHtml = "
+    <!DOCTYPE html>
+    <html lang='pt-BR'>
+    <head>
+        <meta charset='UTF-8'>
+        <title>MVM - Recuperação de Senha</title>
+    </head>
+    <body style='margin: 0; padding: 24px 10px; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif;'>
+        <div style='max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;'>
+            <div style='background: linear-gradient(135deg, #00704A 0%, #005035 100%); padding: 26px 24px; text-align: center; color: #ffffff;'>
+                <h1 style='margin: 0 0 6px 0; font-size: 21px; font-weight: 800;'>MVM ESTOQUE & LOGÍSTICA</h1>
+                <div style='display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 14px; border-radius: 20px; font-size: 11.5px; font-weight: 700; text-transform: uppercase;'>
+                    🔐 Recuperação de Senha de Acesso
+                </div>
+            </div>
+
+            <div style='padding: 26px 24px;'>
+                <p style='margin: 0 0 12px 0; font-size: 15px; color: #1e293b;'>Olá, <b>{$nomeHtml}</b>!</p>
+                <p style='margin: 0 0 20px 0; font-size: 14px; color: #475569; line-height: 1.5;'>
+                    Recebemos uma solicitação para redefinir a senha da sua conta no <b>Sistema MVM</b> em {$dataHora}. Utilize o código de verificação de 6 dígitos abaixo (válido por <b>30 minutos</b>):
+                </p>
+
+                <div style='background: #f8fafc; border: 2px dashed #00704A; border-radius: 10px; padding: 18px; text-align: center; margin-bottom: 22px;'>
+                    <div style='font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 1px; margin-bottom: 6px;'>Código de Segurança</div>
+                    <div style='font-size: 32px; font-weight: 900; letter-spacing: 6px; color: #00704A; font-family: monospace;'>{$codigoHtml}</div>
+                </div>
+
+                <div style='text-align: center; margin-bottom: 22px;'>
+                    <a href='{$linkHtml}' style='display: inline-block; background: #635bff; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: 8px;'>
+                        🔑 Redefinir Minha Senha Agora
+                    </a>
+                </div>
+
+                <p style='margin: 0; font-size: 12px; color: #64748b; line-height: 1.5; text-align: center;'>
+                    Se você não solicitou a alteração de senha, ignore este e-mail com segurança — sua senha atual permanecerá inalterada.
+                </p>
+            </div>
+
+            <div style='background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 14px 24px; text-align: center; color: #94a3b8; font-size: 11.5px;'>
+                MVM Gestão de Estoque • Segurança & Controle de Acesso
+            </div>
+        </div>
+    </body>
+    </html>";
+
+    $corpoTexto = "Olá, {$nomeUsuario}!\n\n"
+        . "Seu código de recuperação de senha do Sistema MVM é: {$codigo}\n"
+        . "(Válido por 30 minutos)\n\n"
+        . "Ou acesse diretamente o link para criar uma nova senha:\n{$linkDireto}\n\n"
+        . "Se você não fez esta solicitação, ignore esta mensagem.";
+
+    $mail = new PHPMailer(true);
+    try {
+        $mail->isSMTP();
+        $mail->Host       = MVM_SMTP_HOST;
+        $mail->Port       = MVM_SMTP_PORTA;
+        $mail->SMTPAuth   = true;
+        $mail->Username   = trim(MVM_SMTP_USUARIO);
+        $mail->Password   = str_replace(' ', '', MVM_SMTP_SENHA);
+        $mail->SMTPSecure = MVM_SMTP_SEGURANCA;
+        $mail->Timeout    = 15;
+        $mail->CharSet    = 'UTF-8';
+        $mail->SMTPOptions = [
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true
+            ]
+        ];
+
+        $mail->setFrom(MVM_SMTP_USUARIO, 'MVM Central de Estoque');
+        $mail->addAddress($emailDestino, $nomeUsuario);
+
+        $mail->isHTML(true);
+        $mail->Subject = "🔐 MVM Estoque - Código de Recuperação de Senha: {$codigo}";
+        $mail->Body    = $corpoHtml;
+        $mail->AltBody = $corpoTexto;
+
+        $mail->send();
+        return true;
+    } catch (\Throwable $e) {
+        return $mail->ErrorInfo ?: $e->getMessage();
+    }
+}

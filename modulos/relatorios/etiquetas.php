@@ -14,7 +14,7 @@ $conexao = conectar();
 
 // Busca os produtos do usuário ordenados por localização (rota do armazém) e nome
 $produtos = [];
-$stmt = mysqli_prepare($conexao, "SELECT idProduto, nomeProduto, categoria, preco, quantidade, nomeFornecedor, localizacao FROM produto WHERE idUsuario = ? ORDER BY localizacao ASC, nomeProduto ASC");
+$stmt = mysqli_prepare($conexao, "SELECT idProduto, codigoBarras, nomeProduto, categoria, preco, quantidade, nomeFornecedor, localizacao FROM produto WHERE idUsuario = ? ORDER BY localizacao ASC, nomeProduto ASC");
 mysqli_stmt_bind_param($stmt, "i", $idUsuario);
 mysqli_stmt_execute($stmt);
 $res = mysqli_stmt_get_result($stmt);
@@ -96,9 +96,10 @@ mysqli_close($conexao);
                     </div>
 
                     <!-- Código de Barras Real Renderizado -->
+                    <?php $codBarraProd = !empty($p['codigoBarras']) ? $p['codigoBarras'] : ('MVM' . sprintf('%06d', $p['idProduto'])); ?>
                     <div class="etiqueta-barcode-box">
-                        <svg class="barcode-svg" data-code="MVM<?= sprintf('%06d', $p['idProduto']) ?>"></svg>
-                        <div class="etiqueta-code-text">CÓD: <?= sprintf('%06d', $p['idProduto']) ?></div>
+                        <svg class="barcode-svg" data-code="<?= htmlspecialchars($codBarraProd) ?>"></svg>
+                        <div class="etiqueta-code-text">CÓD: <?= sprintf('%06d', $p['idProduto']) ?><?= !empty($p['codigoBarras']) ? ' &bull; EAN: ' . htmlspecialchars($p['codigoBarras']) : '' ?></div>
                     </div>
                 </div>
             <?php endforeach; ?>

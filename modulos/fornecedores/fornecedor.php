@@ -60,7 +60,16 @@ $erroBanco = null;
 if (is_object($conexao)) {
     try {
         if ($busca !== '') {
-            $sql = "SELECT * FROM fornecedor WHERE idUsuario = ? AND (nomeFornecedor LIKE ? OR cnpj LIKE ? OR segmento LIKE ? OR cidade LIKE ?) ORDER BY nomeFornecedor ASC";
+            $sql = "
+                SELECT f.*,
+                       COUNT(p.idProduto) AS totalProdutos,
+                       COALESCE(SUM(p.quantidade), 0) AS totalEstoqueFornecedor
+                FROM fornecedor f
+                LEFT JOIN produto p ON (p.idFornecedor = f.idFornecedor OR p.nomeFornecedor = f.nomeFornecedor) AND p.idUsuario = f.idUsuario
+                WHERE f.idUsuario = ? AND (f.nomeFornecedor LIKE ? OR f.cnpj LIKE ? OR f.segmento LIKE ? OR f.cidade LIKE ?)
+                GROUP BY f.idFornecedor
+                ORDER BY f.nomeFornecedor ASC
+            ";
             $stmt = @mysqli_prepare($conexao, $sql);
             if ($stmt) {
                 $termoBusca = "%" . $busca . "%";
@@ -69,7 +78,16 @@ if (is_object($conexao)) {
                 $resultado = mysqli_stmt_get_result($stmt);
             }
         } else {    
-            $sql = "SELECT * FROM fornecedor WHERE idUsuario = ? ORDER BY nomeFornecedor ASC";
+            $sql = "
+                SELECT f.*,
+                       COUNT(p.idProduto) AS totalProdutos,
+                       COALESCE(SUM(p.quantidade), 0) AS totalEstoqueFornecedor
+                FROM fornecedor f
+                LEFT JOIN produto p ON (p.idFornecedor = f.idFornecedor OR p.nomeFornecedor = f.nomeFornecedor) AND p.idUsuario = f.idUsuario
+                WHERE f.idUsuario = ?
+                GROUP BY f.idFornecedor
+                ORDER BY f.nomeFornecedor ASC
+            ";
             $stmt = @mysqli_prepare($conexao, $sql);
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, 'i', $idUsuario);
@@ -141,10 +159,11 @@ require_once __DIR__ . "/../../templates/header.php";
             <table class="data-table" id="tabela-fornecedores">
                 <thead>
                     <tr>
-                        <th style="width: 28%;">Fornecedor &amp; CNPJ</th>
-                        <th style="width: 16%;">Segmento</th>
-                        <th style="width: 22%;">Contato &amp; E-mail</th>
-                        <th style="width: 24%;">Localização &amp; Endereço</th>
+                        <th style="width: 24%;">Fornecedor &amp; CNPJ</th>
+                        <th style="width: 14%;">Segmento</th>
+                        <th style="width: 16%;">Mix no Catálogo</th>
+                        <th style="width: 18%;">Contato &amp; E-mail</th>
+                        <th style="width: 18%;">Localização &amp; Endereço</th>
                         <th style="width: 10%; text-align: right;">Ações</th>
                     </tr>
                 </thead>
@@ -169,6 +188,17 @@ require_once __DIR__ . "/../../templates/header.php";
                                     <span class="status-pill info">
                                         <?= htmlspecialchars($f['segmento'] ?: 'Geral') ?>
                                     </span>
+                                </td>
+                                <td>
+                                    <?php $totP = (int)($f['totalProdutos'] ?? 0); $totEst = (int)($f['totalEstoqueFornecedor'] ?? 0); ?>
+                                    <?php if ($totP > 0): ?>
+                                        <div style="font-size: 12px;">
+                                            <strong style="color: var(--primary);"><?= $totP ?> <?= $totP === 1 ? 'produto' : 'produtos' ?></strong>
+                                            <div style="color: var(--text-muted); font-size: 11px;"><?= $totEst ?> un. em estoque</div>
+                                        </div>
+                                    <?php else: ?>
+                                        <span style="color: var(--text-light); font-size: 12px;">Sem itens vinculados</span>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <div style="display: flex; flex-direction: column; gap: 2px;">
@@ -196,6 +226,9 @@ require_once __DIR__ . "/../../templates/header.php";
                                 </td>
                                 <td>
                                     <div class="row-actions">
+                                        <a href="<?= url('modulos/produtos/produto.php') ?>?busca=<?= urlencode($f['nomeFornecedor']) ?>" class="btn-icon" title="Ver Produtos deste Fornecedor">
+                                            📦
+                                        </a>
                                         <?php 
                                         $telLimpo = preg_replace('/\D/', '', $f['telefone'] ?? '');
                                         if (!empty($telLimpo)): 
@@ -220,7 +253,7 @@ require_once __DIR__ . "/../../templates/header.php";
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr class="empty-row">
-                            <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
                                 <div style="font-size: 32px; margin-bottom: 8px;">🏢</div>
                                 <strong>Nenhum fornecedor cadastrado</strong>
                                 <p style="font-size: 12px; margin-top: 4px;">Clique em "+ Novo Fornecedor" para cadastrar parceiros comerciais.</p>

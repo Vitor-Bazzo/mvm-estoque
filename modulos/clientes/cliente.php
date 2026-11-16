@@ -58,7 +58,16 @@ $erroBanco = null;
 if (is_object($conexao)) {
     try {
         if ($busca !== '') {
-            $sql = "SELECT * FROM cliente WHERE idUsuario = ? AND (nomeCliente LIKE ? OR email LIKE ? OR cidade LIKE ?) ORDER BY nomeCliente ASC";
+            $sql = "
+                SELECT c.*, 
+                       COUNT(CASE WHEN m.tipoMovimento = 'SAIDA' AND m.dataDevolucao IS NULL THEN 1 END) AS totalCompras,
+                       COALESCE(SUM(CASE WHEN m.tipoMovimento = 'SAIDA' AND m.dataDevolucao IS NULL THEN m.valorTotal ELSE 0 END), 0) AS valorTotalGasto
+                FROM cliente c
+                LEFT JOIN movimento m ON m.idCliente = c.idCliente AND m.idUsuario = c.idUsuario
+                WHERE c.idUsuario = ? AND (c.nomeCliente LIKE ? OR c.email LIKE ? OR c.cidade LIKE ?)
+                GROUP BY c.idCliente
+                ORDER BY c.nomeCliente ASC
+            ";
             $stmt = @mysqli_prepare($conexao, $sql);
             if ($stmt) {
                 $termoBusca = "%" . $busca . "%";
@@ -67,7 +76,16 @@ if (is_object($conexao)) {
                 $resultado = mysqli_stmt_get_result($stmt);
             }
         } else {    
-            $sql = "SELECT * FROM cliente WHERE idUsuario = ? ORDER BY nomeCliente ASC";
+            $sql = "
+                SELECT c.*, 
+                       COUNT(CASE WHEN m.tipoMovimento = 'SAIDA' AND m.dataDevolucao IS NULL THEN 1 END) AS totalCompras,
+                       COALESCE(SUM(CASE WHEN m.tipoMovimento = 'SAIDA' AND m.dataDevolucao IS NULL THEN m.valorTotal ELSE 0 END), 0) AS valorTotalGasto
+                FROM cliente c
+                LEFT JOIN movimento m ON m.idCliente = c.idCliente AND m.idUsuario = c.idUsuario
+                WHERE c.idUsuario = ?
+                GROUP BY c.idCliente
+                ORDER BY c.nomeCliente ASC
+            ";
             $stmt = @mysqli_prepare($conexao, $sql);
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, 'i', $idUsuario);
@@ -139,10 +157,11 @@ require_once __DIR__ . "/../../templates/header.php";
             <table class="data-table" id="tabela-clientes">
                 <thead>
                     <tr>
-                        <th style="width: 30%;">Cliente</th>
-                        <th style="width: 20%;">Telefone / Contato</th>
-                        <th style="width: 20%;">Localização</th>
-                        <th style="width: 20%;">Endereço</th>
+                        <th style="width: 26%;">Cliente</th>
+                        <th style="width: 18%;">Telefone / Contato</th>
+                        <th style="width: 18%;">Localização</th>
+                        <th style="width: 18%;">Histórico de Compras</th>
+                        <th style="width: 10%;">Endereço</th>
                         <th style="width: 10%; text-align: right;">Ações</th>
                     </tr>
                 </thead>
@@ -180,12 +199,26 @@ require_once __DIR__ . "/../../templates/header.php";
                                     <?php endif; ?>
                                 </td>
                                 <td>
+                                    <?php $qtdC = (int)($c['totalCompras'] ?? 0); $valC = (float)($c['valorTotalGasto'] ?? 0); ?>
+                                    <?php if ($qtdC > 0): ?>
+                                        <div style="font-size: 12px;">
+                                            <strong style="color: #10b981; font-family: 'JetBrains Mono', monospace;">R$ <?= number_format($valC, 2, ',', '.') ?></strong>
+                                            <div style="color: var(--text-muted); font-size: 11px;"><?= $qtdC ?> <?= $qtdC === 1 ? 'compra realizada' : 'compras realizadas' ?></div>
+                                        </div>
+                                    <?php else: ?>
+                                        <span style="color: var(--text-light); font-size: 12px;">Sem compras</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
                                     <span style="color: var(--text-muted); font-size: 12px;">
                                         <?= htmlspecialchars($c['endereco'] ?: 'Endereço não informado') ?>
                                     </span>
                                 </td>
                                 <td>
                                     <div class="row-actions">
+                                        <a href="<?= url('modulos/movimentos/movimento.php') ?>?busca=<?= urlencode($c['nomeCliente']) ?>" class="btn-icon" title="Ver Histórico de Compras deste Cliente">
+                                            🛒
+                                        </a>
                                         <a href="cliente_editar.php?id=<?= (int)$c['idCliente'] ?>" class="btn-icon" title="Editar Cliente">
                                             ✏️
                                         </a>
@@ -198,7 +231,7 @@ require_once __DIR__ . "/../../templates/header.php";
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr class="empty-row">
-                            <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
                                 <div style="font-size: 32px; margin-bottom: 8px;">👥</div>
                                 <strong>Nenhum cliente cadastrado</strong>
                                 <p style="font-size: 12px; margin-top: 4px;">Clique em "+ Novo Cliente" para iniciar sua carteira.</p>

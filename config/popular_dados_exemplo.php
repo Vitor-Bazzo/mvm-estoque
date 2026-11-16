@@ -12,7 +12,12 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/conexao.php';
 
-function popularBancoComDadosBI() {
+function popularBancoComDadosBI($idUsuario = null) {
+    if ($idUsuario === null) {
+        $idUsuario = obterIdUsuarioLogado();
+    }
+    $idUsuario = max(1, (int)$idUsuario);
+
     $conexao = conectar();
     if (is_string($conexao) || !$conexao) {
         return ['sucesso' => false, 'mensagem' => 'Não foi possível conectar ao banco de dados: ' . $conexao];
@@ -20,32 +25,34 @@ function popularBancoComDadosBI() {
 
     // 1. Inserir ou atualizar produtos de exemplo, garantindo a categoria 'Bebidas'
     $produtosParaInserir = [
-        ['nome' => 'Refrigerante Coca-Cola 2L', 'categoria' => 'Bebidas', 'preco' => 9.50, 'qtd' => 120, 'desc' => 'Refrigerante de cola 2 litros garrafa PET', 'forn' => 'Nestlé Brasil Alimentos'],
-        ['nome' => 'Suco de Laranja Integral 1L', 'categoria' => 'Bebidas', 'preco' => 11.90, 'qtd' => 90, 'desc' => 'Suco 100% natural sem adição de açúcares', 'forn' => 'Nestlé Brasil Alimentos'],
-        ['nome' => 'Água Mineral Crystal 500ml', 'categoria' => 'Bebidas', 'preco' => 3.50, 'qtd' => 200, 'desc' => 'Água mineral natural sem gás', 'forn' => 'Nestlé Brasil Alimentos'],
-        ['nome' => 'Energético Red Bull 250ml', 'categoria' => 'Bebidas', 'preco' => 10.50, 'qtd' => 85, 'desc' => 'Bebida energética gaseificada', 'forn' => 'Nestlé Brasil Alimentos'],
-        ['nome' => 'Mouse Gamer Logitech G502 Hero', 'categoria' => 'Informatica', 'preco' => 249.90, 'qtd' => 60, 'desc' => 'Sensor Hero 25K, 11 botões programáveis', 'forn' => 'Logitech do Brasil'],
-        ['nome' => 'Teclado Mecânico Redragon Kumara', 'categoria' => 'Informatica', 'preco' => 199.90, 'qtd' => 45, 'desc' => 'Switch Outemu Blue LED', 'forn' => 'Tech Distribuidora'],
-        ['nome' => 'SSD Kingston A400 480GB SATA III', 'categoria' => 'Informatica', 'preco' => 289.90, 'qtd' => 70, 'desc' => 'Velocidade 500MB/s', 'forn' => 'Kingston Logística'],
-        ['nome' => 'Protetor Solar Anthelios FPS 70', 'categoria' => 'Cosméticos', 'preco' => 89.90, 'qtd' => 50, 'desc' => 'Controle de oleosidade matte', 'forn' => 'LOréal Brasil Cosméticos'],
-        ['nome' => 'Creme Hidratante Nivea Lata 56g', 'categoria' => 'Cosméticos', 'preco' => 15.90, 'qtd' => 110, 'desc' => 'Hidratação profunda', 'forn' => 'Nivea Distribuição'],
-        ['nome' => 'Café Pilão Tradicional 500g', 'categoria' => 'Alimentícios', 'preco' => 18.90, 'qtd' => 85, 'desc' => 'Café torrado e moído', 'forn' => 'Nestlé Brasil Alimentos'],
-        ['nome' => 'Smart TV Samsung 50 Crystal 4K', 'categoria' => 'Eletro-eletrônicos', 'preco' => 2399.00, 'qtd' => 12, 'desc' => 'Resolução 4K UHD Smart TV', 'forn' => 'Samsung Eletrônica']
+        ['nome' => 'Refrigerante Coca-Cola 2L', 'categoria' => 'Bebidas', 'preco' => 9.50, 'custo' => 5.20, 'qtd' => 120, 'min' => 25, 'loc' => 'A-01-01', 'img' => 'coca_cola_2l.jpg', 'desc' => 'Refrigerante de cola 2 litros garrafa PET', 'forn' => 'Nestlé Brasil Alimentos'],
+        ['nome' => 'Suco de Laranja Integral 1L', 'categoria' => 'Bebidas', 'preco' => 11.90, 'custo' => 6.80, 'qtd' => 90, 'min' => 20, 'loc' => 'A-01-02', 'img' => 'suco_laranja_1l.jpg', 'desc' => 'Suco 100% natural sem adição de açúcares', 'forn' => 'Nestlé Brasil Alimentos'],
+        ['nome' => 'Água Mineral Crystal 500ml', 'categoria' => 'Bebidas', 'preco' => 3.50, 'custo' => 1.40, 'qtd' => 200, 'min' => 30, 'loc' => 'A-01-03', 'img' => 'agua_mineral_500ml.jpg', 'desc' => 'Água mineral natural sem gás', 'forn' => 'Nestlé Brasil Alimentos'],
+        ['nome' => 'Energético Red Bull 250ml', 'categoria' => 'Bebidas', 'preco' => 10.50, 'custo' => 6.10, 'qtd' => 85, 'min' => 15, 'loc' => 'A-01-04', 'img' => 'red_bull_250ml.jpg', 'desc' => 'Bebida energética gaseificada', 'forn' => 'Nestlé Brasil Alimentos'],
+        ['nome' => 'Mouse Gamer Logitech G502 Hero', 'categoria' => 'Informatica', 'preco' => 249.90, 'custo' => 145.00, 'qtd' => 60, 'min' => 10, 'loc' => 'B-02-01', 'img' => 'mouse_gamer_logitech.jpg', 'desc' => 'Sensor Hero 25K, 11 botões programáveis', 'forn' => 'Logitech do Brasil'],
+        ['nome' => 'Teclado Mecânico Redragon Kumara', 'categoria' => 'Informatica', 'preco' => 199.90, 'custo' => 110.00, 'qtd' => 45, 'min' => 10, 'loc' => 'B-02-02', 'img' => 'teclado_mecanico.jpg', 'desc' => 'Switch Outemu Blue LED', 'forn' => 'Tech Distribuidora'],
+        ['nome' => 'SSD Kingston A400 480GB SATA III', 'categoria' => 'Informatica', 'preco' => 289.90, 'custo' => 160.00, 'qtd' => 70, 'min' => 15, 'loc' => 'B-02-03', 'img' => 'ssd_kingston_a400.jpg', 'desc' => 'Velocidade 500MB/s', 'forn' => 'Kingston Logística'],
+        ['nome' => 'Protetor Solar Anthelios FPS 70', 'categoria' => 'Cosméticos', 'preco' => 89.90, 'custo' => 48.00, 'qtd' => 50, 'min' => 12, 'loc' => 'C-01-01', 'img' => 'protetor_solar_anthelios.jpg', 'desc' => 'Controle de oleosidade matte', 'forn' => 'LOréal Brasil Cosméticos'],
+        ['nome' => 'Creme Hidratante Nivea Lata 56g', 'categoria' => 'Cosméticos', 'preco' => 15.90, 'custo' => 7.50, 'qtd' => 110, 'min' => 20, 'loc' => 'C-01-02', 'img' => 'creme_nivea_lata.webp', 'desc' => 'Hidratação profunda', 'forn' => 'Nivea Distribuição'],
+        ['nome' => 'Café Pilão Tradicional 500g', 'categoria' => 'Alimentícios', 'preco' => 18.90, 'custo' => 11.20, 'qtd' => 85, 'min' => 20, 'loc' => 'A-02-01', 'img' => 'cafe_pilao_500g.jpg', 'desc' => 'Café torrado e moído', 'forn' => 'Nestlé Brasil Alimentos'],
+        ['nome' => 'Smart TV Samsung 50 Crystal 4K', 'categoria' => 'Eletro-eletrônicos', 'preco' => 2399.00, 'custo' => 1650.00, 'qtd' => 12, 'min' => 5, 'loc' => 'D-01-01', 'img' => 'smart_tv_samsung_50.jpg', 'desc' => 'Resolução 4K UHD Smart TV', 'forn' => 'Samsung Eletrônica']
     ];
 
     $mapaIds = [];
+    $mapaPrecos = [];
 
     foreach ($produtosParaInserir as $prod) {
-        $stmt = mysqli_prepare($conexao, "SELECT idProduto FROM produto WHERE nomeProduto = ?");
-        mysqli_stmt_bind_param($stmt, "s", $prod['nome']);
+        $mapaPrecos[$prod['nome']] = (float)$prod['preco'];
+        $stmt = mysqli_prepare($conexao, "SELECT idProduto FROM produto WHERE nomeProduto = ? AND idUsuario = ?");
+        mysqli_stmt_bind_param($stmt, "si", $prod['nome'], $idUsuario);
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
 
         if ($linha = mysqli_fetch_assoc($res)) {
             $mapaIds[$prod['nome']] = (int)$linha['idProduto'];
         } else {
-            $stmtIns = mysqli_prepare($conexao, "INSERT INTO produto (nomeProduto, categoria, preco, quantidade, descricao, nomeFornecedor) VALUES (?, ?, ?, ?, ?, ?)");
-            mysqli_stmt_bind_param($stmtIns, "ssdiss", $prod['nome'], $prod['categoria'], $prod['preco'], $prod['qtd'], $prod['desc'], $prod['forn']);
+            $stmtIns = mysqli_prepare($conexao, "INSERT INTO produto (idUsuario, nomeProduto, categoria, preco, precoCusto, quantidade, estoqueMinimo, localizacao, imagem, descricao, nomeFornecedor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            mysqli_stmt_bind_param($stmtIns, "issddiissss", $idUsuario, $prod['nome'], $prod['categoria'], $prod['preco'], $prod['custo'], $prod['qtd'], $prod['min'], $prod['loc'], $prod['img'], $prod['desc'], $prod['forn']);
             mysqli_stmt_execute($stmtIns);
             $mapaIds[$prod['nome']] = mysqli_insert_id($conexao);
         }
@@ -60,9 +67,9 @@ function popularBancoComDadosBI() {
         'Café Pilão Tradicional 500g' => ['lote' => 'LOT-CAF-P50', 'dias' => 60]
     ];
     foreach ($validadesDemo as $pNome => $infoV) {
-        $stmtV = mysqli_prepare($conexao, "UPDATE produto SET lote = ?, dataValidade = DATE_ADD(CURDATE(), INTERVAL ? DAY) WHERE nomeProduto = ?");
+        $stmtV = mysqli_prepare($conexao, "UPDATE produto SET lote = ?, dataValidade = DATE_ADD(CURDATE(), INTERVAL ? DAY) WHERE nomeProduto = ? AND idUsuario = ?");
         if ($stmtV) {
-            mysqli_stmt_bind_param($stmtV, "sis", $infoV['lote'], $infoV['dias'], $pNome);
+            mysqli_stmt_bind_param($stmtV, "sisi", $infoV['lote'], $infoV['dias'], $pNome, $idUsuario);
             mysqli_stmt_execute($stmtV);
         }
     }
@@ -126,14 +133,15 @@ function popularBancoComDadosBI() {
     foreach ($vendasExemplo as $v) {
         if (!isset($mapaIds[$v['prod']])) continue;
         $idProd = $mapaIds[$v['prod']];
-        $qtd = $v['qtd'];
+        $qtd = (int)$v['qtd'];
         $obs = $v['obs'];
-        $dias = $v['dias_atras'];
+        $dias = (int)$v['dias_atras'];
+        $valTotal = round($qtd * ($mapaPrecos[$v['prod']] ?? 0), 2);
 
-        $sql = "INSERT INTO movimento (idProduto, idCliente, idFornecedor, tipoMovimento, quantidade, observacao, dataMovimento, dataDevolucao) 
-                VALUES (?, 1, NULL, 'SAIDA', ?, ?, DATE_SUB(NOW(), INTERVAL ? DAY), NULL)";
+        $sql = "INSERT INTO movimento (idUsuario, idProduto, idCliente, idFornecedor, tipoMovimento, quantidade, observacao, valorTotal, dataMovimento, dataDevolucao) 
+                VALUES (?, ?, NULL, NULL, 'SAIDA', ?, ?, ?, DATE_SUB(NOW(), INTERVAL ? DAY), NULL)";
         $stmt = mysqli_prepare($conexao, $sql);
-        mysqli_stmt_bind_param($stmt, "iisi", $idProd, $qtd, $obs, $dias);
+        mysqli_stmt_bind_param($stmt, "iiisdi", $idUsuario, $idProd, $qtd, $obs, $valTotal, $dias);
         if (mysqli_stmt_execute($stmt)) {
             $totalInseridos++;
         }
@@ -143,10 +151,11 @@ function popularBancoComDadosBI() {
     return ['sucesso' => true, 'mensagem' => "Dados de teste gerados com sucesso! ($totalInseridos vendas registradas em vários dias)."];
 }
 
-// Se for chamado diretamente via GET ou POST (com confirmação e autenticação de administrador)
+// Se for chamado diretamente via GET ou POST (com confirmação e autenticação)
 if (isset($_GET['executar']) && $_GET['executar'] === 'sim') {
-    if (!isset($_SESSION['usuarioLogado']) || (($_SESSION['roleUsuario'] ?? '') !== 'Administrador')) {
-        die("Acesso negado: apenas administradores autenticados podem executar esta rotina.");
+    if (!isset($_SESSION['usuarioLogado'])) {
+        header('Location: ../modulos/auth/login.php');
+        exit;
     }
     $res = popularBancoComDadosBI();
     $_SESSION['flash_dashboard'] = [

@@ -23,6 +23,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if (isset($_POST['nomeProduto'], $_POST['preco'], $_POST['acao']) && $_POST['acao'] === 'salvar') {
         $nomeProduto = trim($_POST['nomeProduto']);
+        $codigoBarras = preg_replace('/\D/', '', trim($_POST['codigoBarras'] ?? ''));
+        $codigoBarras = $codigoBarras !== '' ? $codigoBarras : null;
         $categoria = trim($_POST['categoria'] ?? '');
         $preco = (float) ($_POST['preco'] ?? 0);
         $precoCusto = (float) ($_POST['precoCusto'] ?? 0);
@@ -40,9 +42,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         if ($nomeProduto !== '') {
             $conexao = conectar();
-            $sql = "INSERT INTO produto (idUsuario, nomeProduto, categoria, preco, precoCusto, quantidade, estoqueMinimo, descricao, nomeFornecedor, lote, dataValidade, localizacao, imagem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $idFornecedor = null;
+            if ($nomeFornecedor !== '') {
+                $stmtIdF = mysqli_prepare($conexao, "SELECT idFornecedor FROM fornecedor WHERE nomeFornecedor = ? AND idUsuario = ? LIMIT 1");
+                if ($stmtIdF) {
+                    mysqli_stmt_bind_param($stmtIdF, "si", $nomeFornecedor, $idUsuario);
+                    mysqli_stmt_execute($stmtIdF);
+                    $resIdF = mysqli_stmt_get_result($stmtIdF);
+                    if ($resIdF && $rowIdF = mysqli_fetch_assoc($resIdF)) {
+                        $idFornecedor = (int)$rowIdF['idFornecedor'];
+                    }
+                    mysqli_stmt_close($stmtIdF);
+                }
+            }
+            $sql = "INSERT INTO produto (idUsuario, idFornecedor, codigoBarras, nomeProduto, categoria, preco, precoCusto, quantidade, estoqueMinimo, descricao, nomeFornecedor, lote, dataValidade, localizacao, imagem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = mysqli_prepare($conexao, $sql);
-            mysqli_stmt_bind_param($stmt, "issddiissssss", $idUsuario, $nomeProduto, $categoria, $preco, $precoCusto, $quantidade, $estoqueMinimo, $descricao, $nomeFornecedor, $lote, $dataValidade, $localizacao, $imagem);
+            mysqli_stmt_bind_param($stmt, "iisssddiissssss", $idUsuario, $idFornecedor, $codigoBarras, $nomeProduto, $categoria, $preco, $precoCusto, $quantidade, $estoqueMinimo, $descricao, $nomeFornecedor, $lote, $dataValidade, $localizacao, $imagem);
             
             if (mysqli_stmt_execute($stmt)) {
                 $_SESSION['flash_mensagem'] = ['tipo' => 'sucesso', 'texto' => "Produto '{$nomeProduto}' cadastrado com sucesso!"];
@@ -190,14 +205,16 @@ require_once __DIR__ . "/../../templates/header.php";
                         <?php foreach ($produtos as $p): ?>
                             <?php 
                                 $qtd = (int)$p['quantidade'];
+                                $min = (int)($p['estoqueMinimo'] ?? 10);
+                                if ($min <= 0) $min = 10;
                                 $statusClass = 'success';
                                 $statusTexto = 'Normal: ' . $qtd . ' un';
                                 if ($qtd <= 0) {
                                     $statusClass = 'danger';
                                     $statusTexto = 'Esgotado (0 un)';
-                                } elseif ($qtd <= 20) {
+                                } elseif ($qtd <= $min) {
                                     $statusClass = 'warning';
-                                    $statusTexto = 'Baixo: ' . $qtd . ' un';
+                                    $statusTexto = 'Baixo: ' . $qtd . ' un (Mín: ' . $min . ')';
                                 }
                             ?>
                             <tr>
@@ -211,10 +228,15 @@ require_once __DIR__ . "/../../templates/header.php";
                                         <div class="cell-product-info">
                                             <strong><?= htmlspecialchars($p['nomeProduto']) ?></strong>
                                             <span><?= htmlspecialchars(mb_strimwidth($p['descricao'] ?? 'Sem descrição', 0, 45, '...')) ?></span>
-                                            <div style="margin-top: 4px;">
+                                            <div style="margin-top: 4px; display: flex; gap: 6px; flex-wrap: wrap;">
                                                 <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 7px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-weight: 700;" title="Endereço no armazém (WMS)">
                                                     📍 <?= htmlspecialchars($p['localizacao'] ?? 'A-01-01') ?>
                                                 </span>
+                                                <?php if (!empty($p['codigoBarras'])): ?>
+                                                    <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; padding: 2px 7px; background: var(--bg-subtle); color: var(--text-muted); border: 1px solid var(--border); border-radius: 4px; font-family: 'JetBrains Mono', monospace;" title="Código de Barras EAN-13 / GTIN">
+                                                        🏷️ <?= htmlspecialchars($p['codigoBarras']) ?>
+                                                    </span>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>
@@ -310,9 +332,15 @@ require_once __DIR__ . "/../../templates/header.php";
                     <div id="ean-status-msg" style="display:none; margin-top: 8px; font-size: 12px; padding: 7px 10px; border-radius: 4px;"></div>
                 </div>
 
-                <div class="form-group">
-                    <label for="nomeProduto">Nome do Produto *</label>
-                    <input type="text" id="nomeProduto" name="nomeProduto" placeholder="Ex: Mouse Gamer Logitech G502" required>
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="nomeProduto">Nome do Produto *</label>
+                        <input type="text" id="nomeProduto" name="nomeProduto" placeholder="Ex: Mouse Gamer Logitech G502" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="codigoBarras">Código de Barras (EAN-13 / GTIN)</label>
+                        <input type="text" id="codigoBarras" name="codigoBarras" maxlength="20" placeholder="Ex: 7894900011517" style="font-family: 'JetBrains Mono', monospace;">
+                    </div>
                 </div>
 
                 <div class="form-row-2">
@@ -513,10 +541,10 @@ require_once __DIR__ . "/../../templates/header.php";
                     }
                 }
 
-                // Código do Lote sugerido como o próprio EAN
-                const loteInp = document.getElementById('lote');
-                if (loteInp && !loteInp.value) {
-                    loteInp.value = 'EAN-' + ean;
+                // Preenche o campo dedicado de Código de Barras EAN-13 (sem misturar com o Lote)
+                const eanInp = document.getElementById('codigoBarras');
+                if (eanInp) {
+                    eanInp.value = ean;
                 }
 
                 msg.style.display = 'block';

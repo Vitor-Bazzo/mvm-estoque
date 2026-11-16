@@ -12,7 +12,8 @@ error_log
 Thumbs.db
 desktop.ini
 
-# Arquivos de teste temporários e utilitários locais
+# Arquivos de teste temporários e credenciais locais/produção
 teste_smtp.php
 *.bat
 config/conexao_producao.php
+config/email_credenciais.php

@@ -26,29 +26,10 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // -------------------------------------------------------------------------
-// AUTENTICAÇÃO DA API (Via Sessão Ativa ou Chave de API Token)
+// AUTENTICAÇÃO DA API (Via Sessão Ativa ou Chave de API Token por Usuário)
 // -------------------------------------------------------------------------
-$apiKeyEsperada = 'mvm_live_token_77a89b42';
-$tokenEnviado = $_SERVER['HTTP_X_API_KEY'] ?? ($_GET['api_key'] ?? ($_GET['token'] ?? ''));
-
-$idUsuario = 0;
-if (isset($_SESSION['usuarioLogado'])) {
-    $idUsuario = obterIdUsuarioLogado();
-} elseif ($tokenEnviado === $apiKeyEsperada || $tokenEnviado === 'mvm_demo') {
-    // Modo integração via token externo: associa ao primeiro usuário administrador padrão
-    $idUsuario = 1;
-}
-
-if ($idUsuario <= 0) {
-    http_response_code(401);
-    echo json_encode([
-        'status' => 'error',
-        'code'   => 401,
-        'mensagem' => 'Acesso não autorizado. Envie o cabeçalho X-API-KEY ou realize login na plataforma.',
-        'exemplo_header' => 'X-API-KEY: mvm_live_token_77a89b42'
-    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-    exit;
-}
+$apiKeyPadrao = 'mvm_live_token_77a89b42';
+$tokenEnviado = trim($_SERVER['HTTP_X_API_KEY'] ?? ($_GET['api_key'] ?? ($_GET['token'] ?? '')));
 
 $conexao = conectar();
 if (is_string($conexao)) {
@@ -58,6 +39,39 @@ if (is_string($conexao)) {
         'code'   => 500,
         'mensagem' => 'Falha ao conectar com o banco de dados interno.'
     ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+$idUsuario = 0;
+if (isset($_SESSION['usuarioLogado'])) {
+    $idUsuario = obterIdUsuarioLogado();
+} elseif (!empty($tokenEnviado)) {
+    // Busca usuário proprietário do token no banco
+    $stmtTok = @mysqli_prepare($conexao, "SELECT idUsuario FROM usuario WHERE apiToken = ? LIMIT 1");
+    if ($stmtTok) {
+        mysqli_stmt_bind_param($stmtTok, "s", $tokenEnviado);
+        mysqli_stmt_execute($stmtTok);
+        $resTok = mysqli_stmt_get_result($stmtTok);
+        if ($resTok && $rowTok = mysqli_fetch_assoc($resTok)) {
+            $idUsuario = (int)$rowTok['idUsuario'];
+        }
+        mysqli_stmt_close($stmtTok);
+    }
+    // Fallback para token padrão / demo
+    if ($idUsuario <= 0 && ($tokenEnviado === $apiKeyPadrao || $tokenEnviado === 'mvm_demo')) {
+        $idUsuario = 1;
+    }
+}
+
+if ($idUsuario <= 0) {
+    mysqli_close($conexao);
+    http_response_code(401);
+    echo json_encode([
+        'status' => 'error',
+        'code'   => 401,
+        'mensagem' => 'Acesso não autorizado. Envie o cabeçalho X-API-KEY válido ou realize login na plataforma.',
+        'exemplo_header' => 'X-API-KEY: ' . $apiKeyPadrao
+    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     exit;
 }
 
@@ -72,7 +86,7 @@ if ($metodo === 'GET') {
 
     $sql = "
         SELECT 
-            idProduto, nomeProduto, categoria, preco, precoCusto, quantidade, estoqueMinimo,
+            idProduto, codigoBarras, nomeProduto, categoria, preco, precoCusto, quantidade, estoqueMinimo,
             descricao, nomeFornecedor, lote, dataValidade, localizacao
         FROM produto 
         WHERE idUsuario = ?
@@ -81,12 +95,13 @@ if ($metodo === 'GET') {
     $types = "i";
 
     if (!empty($busca)) {
-        $sql .= " AND (nomeProduto LIKE ? OR categoria LIKE ? OR localizacao LIKE ?)";
+        $sql .= " AND (nomeProduto LIKE ? OR categoria LIKE ? OR localizacao LIKE ? OR codigoBarras LIKE ?)";
         $termo = "%{$busca}%";
         $params[] = $termo;
         $params[] = $termo;
         $params[] = $termo;
-        $types .= "sss";
+        $params[] = $termo;
+        $types .= "ssss";
     }
 
     $sql .= " ORDER BY localizacao ASC, nomeProduto ASC";
@@ -123,6 +138,7 @@ if ($metodo === 'GET') {
 
         $produtosFormatados[] = [
             'id'              => (int)$r['idProduto'],
+            'codigo_barras'   => $r['codigoBarras'],
             'nome'            => $r['nomeProduto'],
             'categoria'       => $r['categoria'] ?: 'Geral',
             'estoque_atual'   => $qtd,
@@ -190,7 +206,7 @@ if ($metodo === 'POST') {
     // Inicia transação ACID
     mysqli_begin_transaction($conexao);
 
-    $stmtP = mysqli_prepare($conexao, "SELECT idProduto, nomeProduto, quantidade, preco, lote, dataValidade, localizacao FROM produto WHERE idProduto = ? AND idUsuario = ? FOR UPDATE");
+    $stmtP = mysqli_prepare($conexao, "SELECT idProduto, nomeProduto, quantidade, preco, precoCusto, lote, dataValidade, localizacao FROM produto WHERE idProduto = ? AND idUsuario = ? FOR UPDATE");
     mysqli_stmt_bind_param($stmtP, "ii", $idProduto, $idUsuario);
     mysqli_stmt_execute($stmtP);
     $resP = mysqli_stmt_get_result($stmtP);
@@ -235,19 +251,20 @@ if ($metodo === 'POST') {
 
     $novoSaldo = ($tipo === 'SAIDA') ? ($estoqueAtual - $quantidade) : ($estoqueAtual + $quantidade);
     $valorUnitario = (float)$produto['preco'];
+    $custoUnitario = (float)($produto['precoCusto'] ?? 0);
     $valorTotal = round($quantidade * $valorUnitario, 2);
     $codigoPedido = 'API-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -4));
 
-    // Registra a movimentação no histórico
+    // Registra a movimentação no histórico com precoUnitario e custoUnitario congelados
     $stmtMov = mysqli_prepare($conexao, "
         INSERT INTO movimento (
             idUsuario, idProduto, tipoMovimento, quantidade, observacao,
-            codigoPedido, lote, dataValidade, valorTotal, dataMovimento
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            codigoPedido, lote, dataValidade, precoUnitario, custoUnitario, valorTotal, dataMovimento
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     ");
     $loteFinal = !empty($lote) ? $lote : ($produto['lote'] ?? null);
     $valFinal = !empty($dataValidade) ? $dataValidade : ($produto['dataValidade'] ?? null);
-    mysqli_stmt_bind_param($stmtMov, "iisissssd", $idUsuario, $idProduto, $tipo, $quantidade, $observacao, $codigoPedido, $loteFinal, $valFinal, $valorTotal);
+    mysqli_stmt_bind_param($stmtMov, "iisissssddd", $idUsuario, $idProduto, $tipo, $quantidade, $observacao, $codigoPedido, $loteFinal, $valFinal, $valorUnitario, $custoUnitario, $valorTotal);
     mysqli_stmt_execute($stmtMov);
     $idMovimento = mysqli_insert_id($conexao);
 

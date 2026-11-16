@@ -44,13 +44,15 @@ if ($id > 0) {
     $mov = mysqli_fetch_assoc($resBusca);
 
     if ($mov) {
-        $novaQuantidade = $mov['estoqueAtual'];
+        $novaQuantidade = (int)$mov['estoqueAtual'];
+        $qtdMov = (int)$mov['quantidade'];
+        $estoquePermitido = true;
 
         // Se for exclusão de VENDA (SAÍDA):
         if ($mov['tipoMovimento'] === 'SAIDA') {
             // Se a venda ainda não havia sido devolvida, repõe a mercadoria no estoque
             if ($mov['dataDevolucao'] === null) {
-                $novaQuantidade = $mov['estoqueAtual'] + $mov['quantidade'];
+                $novaQuantidade = $mov['estoqueAtual'] + $qtdMov;
                 $sqlEstoque = "UPDATE produto SET quantidade = ? WHERE idProduto = ? AND idUsuario = ?";
                 $stmtEstoque = mysqli_prepare($conexao, $sqlEstoque);
                 mysqli_stmt_bind_param($stmtEstoque, "iii", $novaQuantidade, $mov['idProduto'], $idUsuario);
@@ -61,29 +63,53 @@ if ($id > 0) {
             $_SESSION['animacao_caminhao_estoque'] = [
                 'origem'         => 'exclusao_venda',
                 'produto'        => $mov['nomeProduto'] ?? 'Produto',
-                'quantidade'     => $mov['quantidade'],
+                'quantidade'     => $qtdMov,
                 'novaQuantidade' => $novaQuantidade,
                 'tipo'           => 'SAIDA',
-                'mensagem'       => "+{$mov['quantidade']} un. repostas no estoque com a exclusão da venda"
+                'mensagem'       => "+{$qtdMov} un. repostas no estoque com a exclusão da venda"
             ];
 
             $_SESSION['mensagem_movimento'] = [
                 'ok', 
-                "Venda excluída com sucesso! {$mov['quantidade']} un. de '{$mov['nomeProduto']}' foram reabastecidas no estoque (Total: {$novaQuantidade} un.)."
+                "Venda excluída com sucesso! {$qtdMov} un. de '" . htmlspecialchars($mov['nomeProduto']) . "' foram reabastecidas no estoque (Total: {$novaQuantidade} un.)."
             ];
         } else {
-            $_SESSION['mensagem_movimento'] = [
-                'ok', 
-                "Registro de movimentação excluído com sucesso."
-            ];
+            // Exclusão de ENTRADA: se ainda não foi estornada/devolvida, subtrai do estoque
+            if ($mov['dataDevolucao'] === null) {
+                if ($mov['estoqueAtual'] < $qtdMov) {
+                    $estoquePermitido = false;
+                } else {
+                    $novaQuantidade = $mov['estoqueAtual'] - $qtdMov;
+                    $sqlEstoque = "UPDATE produto SET quantidade = ? WHERE idProduto = ? AND idUsuario = ?";
+                    $stmtEstoque = mysqli_prepare($conexao, $sqlEstoque);
+                    mysqli_stmt_bind_param($stmtEstoque, "iii", $novaQuantidade, $mov['idProduto'], $idUsuario);
+                    mysqli_stmt_execute($stmtEstoque);
+                }
+            }
+
+            if ($estoquePermitido) {
+                $_SESSION['mensagem_movimento'] = [
+                    'ok', 
+                    "Entrada excluída com sucesso! O saldo de '" . htmlspecialchars($mov['nomeProduto']) . "' foi ajustado para {$novaQuantidade} un."
+                ];
+            } else {
+                $_SESSION['mensagem_movimento'] = [
+                    'erro', 
+                    "Não é possível excluir esta entrada pois parte dos itens já saiu do estoque (Estoque atual: {$mov['estoqueAtual']} un, Entrada: {$qtdMov} un)."
+                ];
+            }
         }
 
-        // Exclui o registro da tabela movimento
-        $sqlDelete = "DELETE FROM movimento WHERE idMovimento = ? AND idUsuario = ?";
-        $stmtDelete = mysqli_prepare($conexao, $sqlDelete);
-        mysqli_stmt_bind_param($stmtDelete, "ii", $id, $idUsuario);
-        mysqli_stmt_execute($stmtDelete);
-        mysqli_commit($conexao);
+        if ($estoquePermitido) {
+            // Exclui o registro da tabela movimento
+            $sqlDelete = "DELETE FROM movimento WHERE idMovimento = ? AND idUsuario = ?";
+            $stmtDelete = mysqli_prepare($conexao, $sqlDelete);
+            mysqli_stmt_bind_param($stmtDelete, "ii", $id, $idUsuario);
+            mysqli_stmt_execute($stmtDelete);
+            mysqli_commit($conexao);
+        } else {
+            mysqli_rollback($conexao);
+        }
     } else {
         mysqli_rollback($conexao);
     }

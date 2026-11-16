@@ -237,5 +237,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 countEl.textContent = visiveis;
             }
         });
+
+        if (input.value && input.value.trim() !== '') {
+            input.dispatchEvent(new Event('input'));
+        }
     });
 });

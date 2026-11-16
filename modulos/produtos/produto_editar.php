@@ -24,6 +24,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if (isset($_POST['idProduto'], $_POST['nomeProduto'], $_POST['preco'], $_POST['acao']) && $_POST['acao'] === 'salvar') {
         $idProduto = (int)$_POST['idProduto'];
         $nomeProduto = trim($_POST['nomeProduto']);
+        $codigoBarras = preg_replace('/\D/', '', trim($_POST['codigoBarras'] ?? ''));
+        $codigoBarras = $codigoBarras !== '' ? $codigoBarras : null;
         $categoria = trim($_POST['categoria'] ?? '');
         $preco = (float)($_POST['preco'] ?? 0);
         $precoCusto = (float)($_POST['precoCusto'] ?? 0);
@@ -47,9 +49,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         $conexao = conectar();
-        $sql = "UPDATE produto SET nomeProduto = ?, categoria = ?, preco = ?, precoCusto = ?, quantidade = ?, estoqueMinimo = ?, descricao = ?, nomeFornecedor = ?, lote = ?, dataValidade = ?, localizacao = ?, imagem = ? WHERE idProduto = ? AND idUsuario = ?";
+        $idFornecedor = null;
+        if ($nomeFornecedor !== '') {
+            $stmtIdF = mysqli_prepare($conexao, "SELECT idFornecedor FROM fornecedor WHERE nomeFornecedor = ? AND idUsuario = ? LIMIT 1");
+            if ($stmtIdF) {
+                mysqli_stmt_bind_param($stmtIdF, "si", $nomeFornecedor, $idUsuario);
+                mysqli_stmt_execute($stmtIdF);
+                $resIdF = mysqli_stmt_get_result($stmtIdF);
+                if ($resIdF && $rowIdF = mysqli_fetch_assoc($resIdF)) {
+                    $idFornecedor = (int)$rowIdF['idFornecedor'];
+                }
+                mysqli_stmt_close($stmtIdF);
+            }
+        }
+        $sql = "UPDATE produto SET idFornecedor = ?, codigoBarras = ?, nomeProduto = ?, categoria = ?, preco = ?, precoCusto = ?, quantidade = ?, estoqueMinimo = ?, descricao = ?, nomeFornecedor = ?, lote = ?, dataValidade = ?, localizacao = ?, imagem = ? WHERE idProduto = ? AND idUsuario = ?";
         $stmt = mysqli_prepare($conexao, $sql);
-        mysqli_stmt_bind_param($stmt, "ssddiissssssii", $nomeProduto, $categoria, $preco, $precoCusto, $quantidade, $estoqueMinimo, $descricao, $nomeFornecedor, $lote, $dataValidade, $localizacao, $imagem, $idProduto, $idUsuario);
+        mysqli_stmt_bind_param($stmt, "isssddiissssssii", $idFornecedor, $codigoBarras, $nomeProduto, $categoria, $preco, $precoCusto, $quantidade, $estoqueMinimo, $descricao, $nomeFornecedor, $lote, $dataValidade, $localizacao, $imagem, $idProduto, $idUsuario);
         
         if (mysqli_stmt_execute($stmt)) {
             $_SESSION['flash_mensagem'] = ['tipo' => 'sucesso', 'texto' => "Produto '{$nomeProduto}' atualizado com sucesso!"];
@@ -120,9 +135,15 @@ require_once __DIR__ . "/../../templates/header.php";
             <input type="hidden" name="idProduto" value="<?= (int)$produto['idProduto'] ?>" required>
             <input type="hidden" name="imagemAtual" value="<?= htmlspecialchars($produto['imagem'] ?? '') ?>">
 
-            <div class="form-group">
-                <label for="nomeProduto">Nome do Produto *</label>
-                <input type="text" id="nomeProduto" name="nomeProduto" value="<?= htmlspecialchars($produto['nomeProduto']) ?>" required>
+            <div class="form-row-2">
+                <div class="form-group">
+                    <label for="nomeProduto">Nome do Produto *</label>
+                    <input type="text" id="nomeProduto" name="nomeProduto" value="<?= htmlspecialchars($produto['nomeProduto']) ?>" required>
+                </div>
+                <div class="form-group">
+                    <label for="codigoBarras">Código de Barras (EAN-13 / GTIN)</label>
+                    <input type="text" id="codigoBarras" name="codigoBarras" maxlength="20" value="<?= htmlspecialchars($produto['codigoBarras'] ?? '') ?>" placeholder="Ex: 7894900011517" style="font-family: 'JetBrains Mono', monospace;">
+                </div>
             </div>
 
             <div class="form-row-2">

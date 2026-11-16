@@ -32,14 +32,15 @@ $rotuloMes = ($nomeMesExtenso[$partesMes[1]] ?? $partesMes[1]) . " de " . $parte
 // 1. Métricas gerais do mês
 $stmtMetricas = mysqli_prepare($conexao, "
     SELECT 
-        SUM(CASE WHEN tipoMovimento = 'ENTRADA' THEN quantidade ELSE 0 END) AS qtdEntradas,
-        SUM(CASE WHEN tipoMovimento = 'ENTRADA' THEN valorTotal ELSE 0 END) AS valEntradas,
-        SUM(CASE WHEN tipoMovimento = 'SAIDA' AND dataDevolucao IS NULL THEN quantidade ELSE 0 END) AS qtdSaidas,
-        SUM(CASE WHEN tipoMovimento = 'SAIDA' AND dataDevolucao IS NULL THEN valorTotal ELSE 0 END) AS valSaidas,
-        COUNT(DISTINCT CASE WHEN codigoPedido IS NOT NULL THEN codigoPedido END) AS totalPedidos,
+        SUM(CASE WHEN m.tipoMovimento = 'ENTRADA' THEN m.quantidade ELSE 0 END) AS qtdEntradas,
+        SUM(CASE WHEN m.tipoMovimento = 'ENTRADA' THEN (CASE WHEN m.valorTotal > 0 THEN m.valorTotal ELSE m.quantidade * COALESCE(NULLIF(p.precoCusto, 0), p.preco) END) ELSE 0 END) AS valEntradas,
+        SUM(CASE WHEN m.tipoMovimento = 'SAIDA' AND m.dataDevolucao IS NULL THEN m.quantidade ELSE 0 END) AS qtdSaidas,
+        SUM(CASE WHEN m.tipoMovimento = 'SAIDA' AND m.dataDevolucao IS NULL THEN (CASE WHEN m.valorTotal > 0 THEN m.valorTotal ELSE m.quantidade * p.preco END) ELSE 0 END) AS valSaidas,
+        COUNT(DISTINCT CASE WHEN m.tipoMovimento = 'SAIDA' AND m.dataDevolucao IS NULL THEN COALESCE(m.codigoPedido, CONCAT('MOV-', m.idMovimento)) END) AS totalPedidos,
         COUNT(*) AS totalMovimentos
-    FROM movimento
-    WHERE idUsuario = ? AND dataMovimento BETWEEN ? AND ?
+    FROM movimento m
+    INNER JOIN produto p ON p.idProduto = m.idProduto
+    WHERE m.idUsuario = ? AND m.dataMovimento BETWEEN ? AND ?
 ");
 mysqli_stmt_bind_param($stmtMetricas, "iss", $idUsuario, $inicioMes, $fimMes);
 mysqli_stmt_execute($stmtMetricas);
@@ -55,7 +56,8 @@ $totalPedidos = (int)($metricas['totalPedidos'] ?? 0);
 
 // 2. Top 5 Produtos mais vendidos do mês
 $stmtTop = mysqli_prepare($conexao, "
-    SELECT p.nomeProduto, p.categoria, SUM(m.quantidade) as totalVendido, SUM(m.valorTotal) as totalFaturado
+    SELECT p.nomeProduto, p.categoria, SUM(m.quantidade) as totalVendido,
+           SUM(CASE WHEN m.valorTotal > 0 THEN m.valorTotal ELSE m.quantidade * p.preco END) as totalFaturado
     FROM movimento m
     INNER JOIN produto p ON p.idProduto = m.idProduto
     WHERE m.idUsuario = ? AND m.tipoMovimento = 'SAIDA' AND m.dataDevolucao IS NULL
@@ -72,7 +74,8 @@ mysqli_stmt_close($stmtTop);
 // 3. Vendas por Categoria
 $stmtCat = mysqli_prepare($conexao, "
     SELECT COALESCE(NULLIF(p.categoria, ''), 'Sem Categoria') as categoria, 
-           SUM(m.quantidade) as qtdTotal, SUM(m.valorTotal) as valorTotal
+           SUM(m.quantidade) as qtdTotal,
+           SUM(CASE WHEN m.valorTotal > 0 THEN m.valorTotal ELSE m.quantidade * p.preco END) as valorTotal
     FROM movimento m
     INNER JOIN produto p ON p.idProduto = m.idProduto
     WHERE m.idUsuario = ? AND m.tipoMovimento = 'SAIDA' AND m.dataDevolucao IS NULL

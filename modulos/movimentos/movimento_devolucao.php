@@ -82,20 +82,32 @@ if ($idMovimento > 0) {
                 mysqli_stmt_bind_param($stmtUpdMovimento, "ii", $idMovimento, $idUsuario);
                 mysqli_stmt_execute($stmtUpdMovimento);
 
-                // Dispara a animação do mini-caminhão demonstrando o estoque carregado
+                // Dispara a animação do mini-caminhão demonstrando o ajuste de estoque
+                $msgCaminhao = ($tipoMovimento === 'SAIDA')
+                    ? "+{$quantidadeDevolvida} un. recarregadas no estoque"
+                    : "-{$quantidadeDevolvida} un. estornadas ao fornecedor";
+
                 $_SESSION['animacao_caminhao_estoque'] = [
                     'origem'         => 'devolucao',
                     'produto'        => $produto['nomeProduto'] ?? 'Produto',
                     'quantidade'     => $quantidadeDevolvida,
                     'novaQuantidade' => $novaquantidade,
                     'tipo'           => $tipoMovimento,
-                    'mensagem'       => "+{$quantidadeDevolvida} un. recarregadas no estoque"
+                    'mensagem'       => $msgCaminhao
                 ];
 
-                $_SESSION['mensagem_movimento'] = [
-                    'ok', 
-                    "Devolução registrada com sucesso! {$quantidadeDevolvida} un. de '{$produto['nomeProduto']}' retornaram ao estoque (Total: {$novaquantidade} un.)."
-                ];
+                $nomeProdLimpo = htmlspecialchars($produto['nomeProduto']);
+                if ($tipoMovimento === 'SAIDA') {
+                    $_SESSION['mensagem_movimento'] = [
+                        'ok', 
+                        "Devolução de venda registrada! +{$quantidadeDevolvida} un. de '{$nomeProdLimpo}' retornaram ao estoque (Total: {$novaquantidade} un.)."
+                    ];
+                } else {
+                    $_SESSION['mensagem_movimento'] = [
+                        'ok', 
+                        "Estorno de entrada registrado! -{$quantidadeDevolvida} un. de '{$nomeProdLimpo}' foram baixadas do estoque (Total: {$novaquantidade} un.)."
+                    ];
+                }
                 mysqli_commit($conexao);
             } else {
                 mysqli_rollback($conexao);

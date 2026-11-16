@@ -56,6 +56,7 @@ if ($tempoBloqueio > time()) {
                             $_SESSION['usuarioLogado'] = $entrar['nomeUsuario'];
                             $_SESSION['emailUsuario'] = $entrar['emailUsuario'] ?? '';
                             $_SESSION['idUsuario'] = $entrar['idUsuario'];
+                            $_SESSION['planoUsuario'] = $entrar['planoAssinatura'] ?? 'PREMIUM';
                             $_SESSION['roleUsuario'] = (strtolower($entrar['nomeUsuario']) === 'admin' || (isset($entrar['emailUsuario']) && stripos($entrar['emailUsuario'], 'admin') !== false)) ? 'Administrador' : 'Operador';
                             
                             header('Location: ' . url('index.php'));
@@ -106,6 +107,14 @@ require_once __DIR__ . "/../../templates/header.php";
             <p>Entre com suas credenciais para gerenciar o estoque</p>
         </div>
 
+        <?php if (!empty($_SESSION['flash_login'])): ?>
+            <div class="alert-box <?= $_SESSION['flash_login']['tipo'] === 'sucesso' ? 'success' : 'error' ?>" style="margin-bottom: 20px;">
+                <span><?= $_SESSION['flash_login']['tipo'] === 'sucesso' ? '✅' : '⚠️' ?></span>
+                <p><?= htmlspecialchars($_SESSION['flash_login']['texto']) ?></p>
+            </div>
+            <?php unset($_SESSION['flash_login']); ?>
+        <?php endif; ?>
+
         <?php if (!empty($mensagemerro)): ?>
             <div class="alert-box error" style="margin-bottom: 20px;">
                 <span>⚠️</span>
@@ -116,12 +125,15 @@ require_once __DIR__ . "/../../templates/header.php";
         <form action="login.php" method="POST">
             <?= campoCSRF() ?>
             <div class="form-group">
-                <label for="usuario">Nome de Usuário</label>
-                <input type="text" id="usuario" name="usuario" placeholder="Digite seu usuário..." required autofocus>
+                <label for="usuario">Nome de Usuário ou E-mail</label>
+                <input type="text" id="usuario" name="usuario" placeholder="Digite seu usuário ou e-mail..." required autofocus>
             </div>
 
             <div class="form-group">
-                <label for="senha">Senha de Acesso</label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label for="senha" style="margin-bottom: 0;">Senha de Acesso</label>
+                    <a href="esqueci_senha.php" style="font-size: 12px; font-weight: 600;">Esqueci minha senha</a>
+                </div>
                 <input type="password" id="senha" name="senha" placeholder="••••••••" required>
             </div>
 

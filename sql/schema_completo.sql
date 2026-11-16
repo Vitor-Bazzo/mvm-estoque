@@ -6,7 +6,9 @@
 CREATE DATABASE IF NOT EXISTS bdmvm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE bdmvm;
 
--- Apaga as tabelas na ordem correta para respeitar chaves estrangeiras
+-- Apaga Views e Tabelas na ordem correta para respeitar chaves estrangeiras
+DROP VIEW IF EXISTS vw_resumo_financeiro_produto;
+DROP VIEW IF EXISTS vw_estoque_critico;
 DROP TABLE IF EXISTS movimento;
 DROP TABLE IF EXISTS produto;
 DROP TABLE IF EXISTS fornecedor;
@@ -18,12 +20,18 @@ CREATE TABLE usuario (
     idUsuario INT AUTO_INCREMENT PRIMARY KEY,
     nomeUsuario VARCHAR(50) NOT NULL UNIQUE,
     emailUsuario VARCHAR(255) NOT NULL UNIQUE,
-    senhaUsuario VARCHAR(255) NOT NULL
+    senhaUsuario VARCHAR(255) NOT NULL,
+    planoAssinatura VARCHAR(30) NOT NULL DEFAULT 'ESSENCIAL',
+    cicloPlano VARCHAR(15) NOT NULL DEFAULT 'MENSAL',
+    validadePlano DATE DEFAULT NULL,
+    apiToken VARCHAR(80) DEFAULT NULL UNIQUE,
+    tokenRecuperacao VARCHAR(100) DEFAULT NULL,
+    expiraRecuperacao DATETIME DEFAULT NULL
 );
 
 -- Insere o usuário inicial admin (senha: 123)
-INSERT INTO usuario (nomeUsuario, emailUsuario, senhaUsuario) 
-VALUES ('admin', 'admin@mvm.com', '123');
+INSERT INTO usuario (nomeUsuario, emailUsuario, senhaUsuario, planoAssinatura, cicloPlano, validadePlano, apiToken) 
+VALUES ('admin', 'admin@mvm.com', '123', 'PREMIUM', 'MENSAL', DATE_ADD(CURDATE(), INTERVAL 30 DAY), 'mvm_live_token_77a89b42');
 
 -- 2. TABELA DE CLIENTES
 CREATE TABLE cliente (
@@ -35,7 +43,8 @@ CREATE TABLE cliente (
     endereco VARCHAR(255) DEFAULT NULL,
     cidade VARCHAR(100) DEFAULT NULL,
     uf VARCHAR(2) DEFAULT NULL,
-    INDEX idx_cliente_usuario (idUsuario)
+    INDEX idx_cliente_usuario (idUsuario),
+    CONSTRAINT fk_cliente_usuario FOREIGN KEY (idUsuario) REFERENCES usuario(idUsuario) ON DELETE CASCADE
 );
 
 -- Insere clientes de exemplo
@@ -58,7 +67,8 @@ CREATE TABLE fornecedor (
     endereco VARCHAR(255) DEFAULT NULL,
     cidade VARCHAR(100) DEFAULT NULL,
     uf VARCHAR(2) DEFAULT NULL,
-    INDEX idx_fornecedor_usuario (idUsuario)
+    INDEX idx_fornecedor_usuario (idUsuario),
+    CONSTRAINT fk_fornecedor_usuario FOREIGN KEY (idUsuario) REFERENCES usuario(idUsuario) ON DELETE CASCADE
 );
 
 -- Insere fornecedores de exemplo
@@ -76,34 +86,41 @@ CREATE TABLE produto (
     idProduto INT AUTO_INCREMENT PRIMARY KEY,
     idUsuario INT NOT NULL DEFAULT 1,
     idFornecedor INT DEFAULT NULL,
+    codigoBarras VARCHAR(20) DEFAULT NULL,
     nomeProduto VARCHAR(255) NOT NULL,
     categoria VARCHAR(100) DEFAULT NULL,
     preco DECIMAL(10, 2) NOT NULL,
     precoCusto DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     quantidade INT NOT NULL DEFAULT 0,
     estoqueMinimo INT NOT NULL DEFAULT 10,
+    localizacao VARCHAR(60) NOT NULL DEFAULT 'A-01-01',
     descricao TEXT DEFAULT NULL,
     nomeFornecedor VARCHAR(255) DEFAULT NULL,
     lote VARCHAR(50) DEFAULT NULL,
     dataValidade DATE DEFAULT NULL,
     imagem VARCHAR(255) DEFAULT NULL,
     INDEX idx_produto_usuario (idUsuario),
-    FOREIGN KEY (idFornecedor) REFERENCES fornecedor(idFornecedor) ON DELETE SET NULL
+    INDEX idx_prod_fefo (idUsuario, dataValidade),
+    INDEX idx_prod_ean (idUsuario, codigoBarras),
+    INDEX idx_prod_cat (idUsuario, categoria),
+    CONSTRAINT chk_produto_qtd CHECK (quantidade >= 0),
+    CONSTRAINT fk_produto_usuario FOREIGN KEY (idUsuario) REFERENCES usuario(idUsuario) ON DELETE CASCADE,
+    CONSTRAINT fk_produto_fornecedor FOREIGN KEY (idFornecedor) REFERENCES fornecedor(idFornecedor) ON DELETE SET NULL
 );
 
--- Insere produtos de exemplo vinculados ao admin (idUsuario = 1)
-INSERT INTO produto (idUsuario, nomeProduto, categoria, preco, precoCusto, quantidade, estoqueMinimo, descricao, nomeFornecedor, lote, dataValidade, imagem) VALUES
-(1, 'Refrigerante Coca-Cola 2L', 'Bebidas', 9.50, 5.20, 150, 25, 'Refrigerante sabor cola tradicional em garrafa PET 2 Litros.', 'Nestlé Brasil Alimentos', 'LOT-BEB-2026', DATE_ADD(CURDATE(), INTERVAL 90 DAY), NULL),
-(1, 'Suco de Laranja Integral 1L', 'Bebidas', 11.90, 6.80, 100, 20, 'Suco 100% fruta natural sem adição de açúcar ou conservantes.', 'Nestlé Brasil Alimentos', 'LOT-SUC-2026', DATE_ADD(CURDATE(), INTERVAL 25 DAY), NULL),
-(1, 'Água Mineral Crystal 500ml', 'Bebidas', 3.50, 1.40, 200, 30, 'Água mineral natural sem gás, embalagem prática.', 'Nestlé Brasil Alimentos', 'LOT-AGU-2026', DATE_ADD(CURDATE(), INTERVAL 180 DAY), NULL),
-(1, 'Energético Red Bull 250ml', 'Bebidas', 10.50, 6.10, 90, 15, 'Bebida energética gaseificada com taurina e cafeína.', 'Nestlé Brasil Alimentos', 'LOT-RED-2026', DATE_ADD(CURDATE(), INTERVAL 120 DAY), NULL),
-(1, 'Mouse Gamer Logitech G502 Hero', 'Informatica', 249.90, 145.00, 50, 10, 'Sensor Hero 25K, 11 botões programáveis e pesos ajustáveis.', 'Logitech do Brasil', 'LOT-LOG-502', NULL, NULL),
-(1, 'Teclado Mecânico Redragon Kumara', 'Informatica', 199.90, 110.00, 35, 10, 'Switch Outemu Blue, iluminação LED vermelha.', 'Tech Distribuidora', 'LOT-RED-K55', NULL, NULL),
-(1, 'SSD Kingston A400 480GB SATA III', 'Informatica', 289.90, 160.00, 80, 15, 'Velocidade de leitura até 500MB/s e gravação até 450MB/s.', 'Kingston Logística', 'LOT-SSD-A40', NULL, NULL),
-(1, 'Protetor Solar Anthelios FPS 70', 'Cosméticos', 89.90, 48.00, 40, 12, 'Controle de oleosidade e acabamento matte.', 'LOréal Brasil Cosméticos', 'LOT-COS-70A', DATE_ADD(CURDATE(), INTERVAL 45 DAY), NULL),
-(1, 'Creme Hidratante Nivea Lata Azul 56g', 'Cosméticos', 15.90, 7.50, 120, 20, 'Hidratação profunda para todos os tipos de pele.', 'Nivea Distribuição', 'LOT-NIV-056', DATE_ADD(CURDATE(), INTERVAL 60 DAY), NULL),
-(1, 'Café Pilão Tradicional 500g', 'Alimentícios', 18.90, 11.20, 95, 20, 'Café torrado e moído tradicional a vácuo.', 'Nestlé Brasil Alimentos', 'LOT-CAF-500', DATE_ADD(CURDATE(), INTERVAL 75 DAY), NULL),
-(1, 'Smart TV Samsung 50" Crystal UHD 4K', 'Eletro-eletrônicos', 2399.00, 1650.00, 15, 5, 'Resolução 4K UHD com processador Crystal e comando de voz.', 'Samsung Eletrônica', 'LOT-SAM-4KU', NULL, NULL);
+-- Insere produtos de exemplo vinculados ao admin (idUsuario = 1) e aos respectivos fornecedores
+INSERT INTO produto (idUsuario, idFornecedor, codigoBarras, nomeProduto, categoria, preco, precoCusto, quantidade, estoqueMinimo, localizacao, descricao, nomeFornecedor, lote, dataValidade, imagem) VALUES
+(1, 6, '7894900011517', 'Refrigerante Coca-Cola 2L', 'Bebidas', 9.50, 5.20, 150, 25, 'A-01-01', 'Refrigerante sabor cola tradicional em garrafa PET 2 Litros.', 'Nestlé Brasil Alimentos', 'LOT-BEB-2026', DATE_ADD(CURDATE(), INTERVAL 90 DAY), 'coca_cola_2l.jpg'),
+(1, 6, '7894900011524', 'Suco de Laranja Integral 1L', 'Bebidas', 11.90, 6.80, 100, 20, 'A-01-02', 'Suco 100% fruta natural sem adição de açúcar ou conservantes.', 'Nestlé Brasil Alimentos', 'LOT-SUC-2026', DATE_ADD(CURDATE(), INTERVAL 25 DAY), 'suco_laranja_1l.jpg'),
+(1, 6, '7894900530001', 'Água Mineral Crystal 500ml', 'Bebidas', 3.50, 1.40, 200, 30, 'A-01-03', 'Água mineral natural sem gás, embalagem prática.', 'Nestlé Brasil Alimentos', 'LOT-AGU-2026', DATE_ADD(CURDATE(), INTERVAL 180 DAY), 'agua_mineral_500ml.jpg'),
+(1, 6, '9002490100070', 'Energético Red Bull 250ml', 'Bebidas', 10.50, 6.10, 90, 15, 'A-01-04', 'Bebida energética gaseificada com taurina e cafeína.', 'Nestlé Brasil Alimentos', 'LOT-RED-2026', DATE_ADD(CURDATE(), INTERVAL 120 DAY), 'red_bull_250ml.jpg'),
+(1, 2, '0097855141224', 'Mouse Gamer Logitech G502 Hero', 'Informatica', 249.90, 145.00, 50, 10, 'B-02-01', 'Sensor Hero 25K, 11 botões programáveis e pesos ajustáveis.', 'Logitech do Brasil', 'LOT-LOG-502', NULL, 'mouse_gamer_logitech.jpg'),
+(1, 1, '6950376773906', 'Teclado Mecânico Redragon Kumara', 'Informatica', 199.90, 110.00, 35, 10, 'B-02-02', 'Switch Outemu Blue, iluminação LED vermelha.', 'Tech Distribuidora', 'LOT-RED-K55', NULL, 'teclado_mecanico.jpg'),
+(1, 3, '0740617263442', 'SSD Kingston A400 480GB SATA III', 'Informatica', 289.90, 160.00, 80, 15, 'B-02-03', 'Velocidade de leitura até 500MB/s e gravação até 450MB/s.', 'Kingston Logística', 'LOT-SSD-A40', NULL, 'ssd_kingston_a400.jpg'),
+(1, 4, '3337875588621', 'Protetor Solar Anthelios FPS 70', 'Cosméticos', 89.90, 48.00, 40, 12, 'C-01-01', 'Controle de oleosidade e acabamento matte.', 'LOréal Brasil Cosméticos', 'LOT-COS-70A', DATE_ADD(CURDATE(), INTERVAL 45 DAY), 'protetor_solar_anthelios.jpg'),
+(1, 5, '4005808000111', 'Creme Hidratante Nivea Lata Azul 56g', 'Cosméticos', 15.90, 7.50, 120, 20, 'C-01-02', 'Hidratação profunda para todos os tipos de pele.', 'Nivea Distribuição', 'LOT-NIV-056', DATE_ADD(CURDATE(), INTERVAL 60 DAY), 'creme_nivea_lata.webp'),
+(1, 6, '7896089011357', 'Café Pilão Tradicional 500g', 'Alimentícios', 18.90, 11.20, 95, 20, 'A-02-01', 'Café torrado e moído tradicional a vácuo.', 'Nestlé Brasil Alimentos', 'LOT-CAF-500', DATE_ADD(CURDATE(), INTERVAL 75 DAY), 'cafe_pilao_500g.jpg'),
+(1, 7, '7892509116756', 'Smart TV Samsung 50" Crystal UHD 4K', 'Eletro-eletrônicos', 2399.00, 1650.00, 15, 5, 'D-01-01', 'Resolução 4K UHD com processador Crystal e comando de voz.', 'Samsung Eletrônica', 'LOT-SAM-4KU', NULL, 'smart_tv_samsung_50.jpg');
 
 -- 5. TABELA DE MOVIMENTAÇÕES DE ESTOQUE
 CREATE TABLE movimento (
@@ -119,14 +136,20 @@ CREATE TABLE movimento (
     lote VARCHAR(50) DEFAULT NULL,
     dataValidade DATE DEFAULT NULL,
     motivoAjuste VARCHAR(100) DEFAULT NULL,
+    precoUnitario DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    custoUnitario DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     valorTotal DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     dataMovimento DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     dataDevolucao DATETIME DEFAULT NULL,
     INDEX idx_movimento_usuario (idUsuario),
     INDEX idx_movimento_pedido (codigoPedido),
-    FOREIGN KEY (idProduto) REFERENCES produto(idProduto) ON DELETE CASCADE,
-    FOREIGN KEY (idCliente) REFERENCES cliente(idCliente) ON DELETE SET NULL,
-    FOREIGN KEY (idFornecedor) REFERENCES fornecedor(idFornecedor) ON DELETE SET NULL
+    INDEX idx_mov_bi (idUsuario, tipoMovimento, dataMovimento),
+    INDEX idx_mov_kardex (idUsuario, idProduto, dataMovimento),
+    CONSTRAINT chk_movimento_qtd CHECK (quantidade > 0),
+    CONSTRAINT fk_movimento_usuario FOREIGN KEY (idUsuario) REFERENCES usuario(idUsuario) ON DELETE CASCADE,
+    CONSTRAINT fk_movimento_produto FOREIGN KEY (idProduto) REFERENCES produto(idProduto) ON DELETE CASCADE,
+    CONSTRAINT fk_movimento_cliente FOREIGN KEY (idCliente) REFERENCES cliente(idCliente) ON DELETE SET NULL,
+    CONSTRAINT fk_movimento_fornecedor FOREIGN KEY (idFornecedor) REFERENCES fornecedor(idFornecedor) ON DELETE SET NULL
 );
 
 -- Insere movimentações de exemplo com histórico de vendas distribuído por dias
@@ -175,3 +198,36 @@ INSERT INTO movimento (idProduto, idCliente, idFornecedor, tipoMovimento, quanti
 -- Entrada e Devolução para testes de regras de negócio
 (7, NULL, 3, 'ENTRADA', 30, 'Carga de reposição recebida', DATE_SUB(NOW(), INTERVAL 5 DAY), NULL),
 (6, 2, NULL, 'SAIDA', 1, 'Venda de teste com devolução', DATE_SUB(NOW(), INTERVAL 3 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY));
+
+-- Calcula automaticamente precoUnitario, custoUnitario e valorTotal das movimentações iniciais
+UPDATE movimento m
+INNER JOIN produto p ON p.idProduto = m.idProduto
+SET m.precoUnitario = p.preco,
+    m.custoUnitario = p.precoCusto,
+    m.valorTotal    = ROUND(m.quantidade * p.preco, 2);
+
+-- 6. VIEWS ANALÍTICAS DO BANCO DE DADOS
+CREATE OR REPLACE VIEW vw_estoque_critico AS
+SELECT 
+    p.idProduto, p.idUsuario, p.codigoBarras, p.nomeProduto, p.categoria,
+    p.quantidade AS estoqueAtual, p.estoqueMinimo, p.localizacao,
+    p.preco, p.precoCusto, p.lote, p.dataValidade,
+    DATEDIFF(p.dataValidade, CURDATE()) AS diasParaVencer,
+    COALESCE(f.nomeFornecedor, p.nomeFornecedor, 'Não vinculado') AS fornecedor,
+    f.telefone AS telefoneFornecedor
+FROM produto p
+LEFT JOIN fornecedor f ON f.idFornecedor = p.idFornecedor
+WHERE p.quantidade <= p.estoqueMinimo
+   OR (p.dataValidade IS NOT NULL AND p.dataValidade <= DATE_ADD(CURDATE(), INTERVAL 30 DAY));
+
+CREATE OR REPLACE VIEW vw_resumo_financeiro_produto AS
+SELECT 
+    p.idProduto, p.idUsuario, p.codigoBarras, p.nomeProduto, p.categoria, p.localizacao,
+    p.quantidade AS saldoEstoque, p.preco AS precoVendaAtual, p.precoCusto AS custoUnitarioAtual,
+    ROUND(p.quantidade * p.preco, 2) AS valorVendaEstoque,
+    ROUND(p.quantidade * p.precoCusto, 2) AS valorCustoEstoque,
+    COALESCE(SUM(CASE WHEN m.tipoMovimento = 'SAIDA' AND m.dataDevolucao IS NULL THEN m.quantidade ELSE 0 END), 0) AS totalUnidadesVendidas,
+    COALESCE(SUM(CASE WHEN m.tipoMovimento = 'SAIDA' AND m.dataDevolucao IS NULL THEN m.valorTotal ELSE 0 END), 0) AS receitaAcumulada
+FROM produto p
+LEFT JOIN movimento m ON m.idProduto = p.idProduto AND m.idUsuario = p.idUsuario
+GROUP BY p.idProduto, p.idUsuario, p.codigoBarras, p.nomeProduto, p.categoria, p.localizacao, p.quantidade, p.preco, p.precoCusto;

@@ -6,6 +6,24 @@ require_once __DIR__ . "/../templates/header.php";
 $idUsuario = obterIdUsuarioLogado();
 $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]" . obterBaseUrl();
 $tokenExemplo = 'mvm_live_token_77a89b42';
+if ($idUsuario > 0) {
+    $conTok = conectar();
+    if (is_object($conTok)) {
+        $stmtT = @mysqli_prepare($conTok, "SELECT apiToken FROM usuario WHERE idUsuario = ?");
+        if ($stmtT) {
+            mysqli_stmt_bind_param($stmtT, "i", $idUsuario);
+            mysqli_stmt_execute($stmtT);
+            $resT = mysqli_stmt_get_result($stmtT);
+            if ($resT && $rowT = mysqli_fetch_assoc($resT)) {
+                if (!empty($rowT['apiToken'])) {
+                    $tokenExemplo = $rowT['apiToken'];
+                }
+            }
+            mysqli_stmt_close($stmtT);
+        }
+        mysqli_close($conTok);
+    }
+}
 ?>
 
 <style>

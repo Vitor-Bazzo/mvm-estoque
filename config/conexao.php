@@ -16,11 +16,11 @@ function conectar() {
     }
 
     if (!$isLocal) {
-        // Credenciais automáticas de produção para o InfinityFree (mvmcontrol.wuaze.com)
-        $hostPadrao = 'sql311.infinityfree.com';
-        $userPadrao = 'if0_42798246';
-        $passPadrao = 'DA3oa2pkLHi';
-        $bdPadrao   = 'if0_42798246_bdmvm';
+        // Credenciais de produção devem ser definidas em config/conexao_producao.php ou variáveis de ambiente
+        $hostPadrao = 'localhost';
+        $userPadrao = 'root';
+        $passPadrao = '';
+        $bdPadrao   = 'bdmvm';
     } else {
         // Credenciais locais XAMPP
         $hostPadrao = '127.0.0.1';
@@ -89,6 +89,7 @@ function verificarEAtualizarColunas($conexao) {
     $colunasProduto = [
         'idUsuario'      => "ALTER TABLE produto ADD COLUMN idUsuario INT NOT NULL DEFAULT 1",
         'idFornecedor'   => "ALTER TABLE produto ADD COLUMN idFornecedor INT NULL",
+        'codigoBarras'   => "ALTER TABLE produto ADD COLUMN codigoBarras VARCHAR(20) NULL",
         'precoCusto'     => "ALTER TABLE produto ADD COLUMN precoCusto DECIMAL(10,2) NOT NULL DEFAULT 0.00",
         'estoqueMinimo'  => "ALTER TABLE produto ADD COLUMN estoqueMinimo INT NOT NULL DEFAULT 10",
         'lote'           => "ALTER TABLE produto ADD COLUMN lote VARCHAR(50) NULL",
@@ -101,6 +102,8 @@ function verificarEAtualizarColunas($conexao) {
         'codigoPedido'   => "ALTER TABLE movimento ADD COLUMN codigoPedido VARCHAR(50) NULL",
         'lote'           => "ALTER TABLE movimento ADD COLUMN lote VARCHAR(50) NULL",
         'dataValidade'   => "ALTER TABLE movimento ADD COLUMN dataValidade DATE NULL",
+        'precoUnitario'  => "ALTER TABLE movimento ADD COLUMN precoUnitario DECIMAL(10,2) NOT NULL DEFAULT 0.00",
+        'custoUnitario'  => "ALTER TABLE movimento ADD COLUMN custoUnitario DECIMAL(10,2) NOT NULL DEFAULT 0.00",
         'valorTotal'     => "ALTER TABLE movimento ADD COLUMN valorTotal DECIMAL(10,2) NOT NULL DEFAULT 0.00",
         'motivoAjuste'   => "ALTER TABLE movimento ADD COLUMN motivoAjuste VARCHAR(100) NULL"
     ];
@@ -134,6 +137,106 @@ function verificarEAtualizarColunas($conexao) {
                     @mysqli_query($conexao, $sqlAlter);
                 }
             }
+        }
+        // Sincroniza precoUnitario, custoUnitario e valorTotal em movimentações antigas
+        @mysqli_query($conexao, "
+            UPDATE movimento m
+            INNER JOIN produto p ON p.idProduto = m.idProduto
+            SET m.precoUnitario = CASE WHEN m.precoUnitario <= 0 THEN p.preco ELSE m.precoUnitario END,
+                m.custoUnitario = CASE WHEN m.custoUnitario <= 0 THEN p.precoCusto ELSE m.custoUnitario END,
+                m.valorTotal    = CASE WHEN m.valorTotal <= 0 THEN ROUND(m.quantidade * p.preco, 2) ELSE m.valorTotal END
+            WHERE m.valorTotal <= 0 OR m.precoUnitario <= 0
+        ");
+
+        // Sincroniza chave estrangeira idFornecedor nos produtos com base no nomeFornecedor
+        @mysqli_query($conexao, "
+            UPDATE produto p
+            INNER JOIN fornecedor f ON f.nomeFornecedor = p.nomeFornecedor AND f.idUsuario = p.idUsuario
+            SET p.idFornecedor = f.idFornecedor
+            WHERE p.idFornecedor IS NULL AND p.nomeFornecedor IS NOT NULL AND p.nomeFornecedor != ''
+        ");
+
+        // Preenche códigos EAN-13 padrão nos produtos caso ainda estejam vazios
+        @mysqli_query($conexao, "
+            UPDATE produto
+            SET codigoBarras = CONCAT('7894900', LPAD(idProduto, 6, '0'))
+            WHERE codigoBarras IS NULL OR codigoBarras = ''
+        ");
+
+        // Garante índices compostos de alta performance (BI, Kardex, FEFO e EAN)
+        $indicesDesejados = [
+            ['tabela' => 'produto',   'nome' => 'idx_prod_fefo',  'ddl' => 'CREATE INDEX idx_prod_fefo ON produto (idUsuario, dataValidade)'],
+            ['tabela' => 'produto',   'nome' => 'idx_prod_ean',   'ddl' => 'CREATE INDEX idx_prod_ean ON produto (idUsuario, codigoBarras)'],
+            ['tabela' => 'produto',   'nome' => 'idx_prod_cat',   'ddl' => 'CREATE INDEX idx_prod_cat ON produto (idUsuario, categoria)'],
+            ['tabela' => 'movimento', 'nome' => 'idx_mov_bi',     'ddl' => 'CREATE INDEX idx_mov_bi ON movimento (idUsuario, tipoMovimento, dataMovimento)'],
+            ['tabela' => 'movimento', 'nome' => 'idx_mov_kardex', 'ddl' => 'CREATE INDEX idx_mov_kardex ON movimento (idUsuario, idProduto, dataMovimento)']
+        ];
+        foreach ($indicesDesejados as $idx) {
+            $resIdx = @mysqli_query($conexao, "SHOW INDEX FROM {$idx['tabela']} WHERE Key_name = '{$idx['nome']}'");
+            if ($resIdx && mysqli_num_rows($resIdx) === 0) {
+                @mysqli_query($conexao, $idx['ddl']);
+            }
+        }
+
+        // Garante Views analíticas no banco de dados
+        @mysqli_query($conexao, "
+            CREATE OR REPLACE VIEW vw_estoque_critico AS
+            SELECT 
+                p.idProduto, p.idUsuario, p.codigoBarras, p.nomeProduto, p.categoria,
+                p.quantidade AS estoqueAtual, p.estoqueMinimo, p.localizacao,
+                p.preco, p.precoCusto, p.lote, p.dataValidade,
+                DATEDIFF(p.dataValidade, CURDATE()) AS diasParaVencer,
+                COALESCE(f.nomeFornecedor, p.nomeFornecedor, 'Não vinculado') AS fornecedor,
+                f.telefone AS telefoneFornecedor
+            FROM produto p
+            LEFT JOIN fornecedor f ON f.idFornecedor = p.idFornecedor
+            WHERE p.quantidade <= p.estoqueMinimo
+               OR (p.dataValidade IS NOT NULL AND p.dataValidade <= DATE_ADD(CURDATE(), INTERVAL 30 DAY))
+        ");
+
+        @mysqli_query($conexao, "
+            CREATE OR REPLACE VIEW vw_resumo_financeiro_produto AS
+            SELECT 
+                p.idProduto, p.idUsuario, p.codigoBarras, p.nomeProduto, p.categoria, p.localizacao,
+                p.quantidade AS saldoEstoque, p.preco AS precoVendaAtual, p.precoCusto AS custoUnitarioAtual,
+                ROUND(p.quantidade * p.preco, 2) AS valorVendaEstoque,
+                ROUND(p.quantidade * p.precoCusto, 2) AS valorCustoEstoque,
+                COALESCE(SUM(CASE WHEN m.tipoMovimento = 'SAIDA' AND m.dataDevolucao IS NULL THEN m.quantidade ELSE 0 END), 0) AS totalUnidadesVendidas,
+                COALESCE(SUM(CASE WHEN m.tipoMovimento = 'SAIDA' AND m.dataDevolucao IS NULL THEN m.valorTotal ELSE 0 END), 0) AS receitaAcumulada
+            FROM produto p
+            LEFT JOIN movimento m ON m.idProduto = p.idProduto AND m.idUsuario = p.idUsuario
+            GROUP BY p.idProduto, p.idUsuario, p.codigoBarras, p.nomeProduto, p.categoria, p.localizacao, p.quantidade, p.preco, p.precoCusto
+        ");
+
+        // Garante colunas apiToken, tokenRecuperacao e expiraRecuperacao na tabela usuario
+        $resUserCols = @mysqli_query($conexao, "SHOW COLUMNS FROM usuario");
+        if ($resUserCols) {
+            $colsU = [];
+            while ($cu = mysqli_fetch_assoc($resUserCols)) {
+                $colsU[strtolower($cu['Field'])] = true;
+            }
+            if (!isset($colsU['apitoken'])) {
+                @mysqli_query($conexao, "ALTER TABLE usuario ADD COLUMN apiToken VARCHAR(80) NULL");
+            }
+            if (!isset($colsU['tokenrecuperacao'])) {
+                @mysqli_query($conexao, "ALTER TABLE usuario ADD COLUMN tokenRecuperacao VARCHAR(100) NULL DEFAULT NULL");
+            }
+            if (!isset($colsU['expirarecuperacao'])) {
+                @mysqli_query($conexao, "ALTER TABLE usuario ADD COLUMN expiraRecuperacao DATETIME NULL DEFAULT NULL");
+            }
+            if (!isset($colsU['planoassinatura'])) {
+                @mysqli_query($conexao, "ALTER TABLE usuario ADD COLUMN planoAssinatura VARCHAR(30) NOT NULL DEFAULT 'ESSENCIAL'");
+                @mysqli_query($conexao, "UPDATE usuario SET planoAssinatura = 'PREMIUM' WHERE idUsuario = 1");
+            }
+            if (!isset($colsU['cicloplano'])) {
+                @mysqli_query($conexao, "ALTER TABLE usuario ADD COLUMN cicloPlano VARCHAR(15) NOT NULL DEFAULT 'MENSAL'");
+            }
+            if (!isset($colsU['validadeplano'])) {
+                @mysqli_query($conexao, "ALTER TABLE usuario ADD COLUMN validadePlano DATE NULL DEFAULT NULL");
+                @mysqli_query($conexao, "UPDATE usuario SET validadePlano = DATE_ADD(CURDATE(), INTERVAL 30 DAY) WHERE validadePlano IS NULL");
+            }
+            @mysqli_query($conexao, "UPDATE usuario SET apiToken = 'mvm_live_token_77a89b42' WHERE idUsuario = 1 AND (apiToken IS NULL OR apiToken = '')");
+            @mysqli_query($conexao, "UPDATE usuario SET apiToken = CONCAT('mvm_live_', SUBSTRING(MD5(CONCAT(idUsuario, nomeUsuario, 'mvm_salt')), 1, 16)) WHERE apiToken IS NULL OR apiToken = ''");
         }
     } catch (Throwable $e) {
         // Tabela ainda não criada ou sem permissão
@@ -173,6 +276,13 @@ function obterIdUsuarioLogado() {
  */
 function iniciarSessaoSegura() {
     if (session_status() === PHP_SESSION_NONE) {
+        $savePath = session_save_path();
+        if (empty($savePath) || !@is_dir($savePath) || !@is_writable($savePath)) {
+            $tempDir = sys_get_temp_dir();
+            if (@is_dir($tempDir) && @is_writable($tempDir)) {
+                @session_save_path($tempDir);
+            }
+        }
         if (!headers_sent()) {
             session_set_cookie_params([
                 'lifetime' => 0,
@@ -183,7 +293,7 @@ function iniciarSessaoSegura() {
                 'samesite' => 'Lax'
             ]);
         }
-        session_start();
+        @session_start();
     }
 }
 

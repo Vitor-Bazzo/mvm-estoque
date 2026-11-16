@@ -33,11 +33,32 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         if ($idFornecedor > 0 && $nomeFornecedor !== '' && $cnpj !== '') {
             $conexao = conectar();
+            // Busca nome antigo para manter produtos vinculados sincronizados
+            $nomeAntigo = null;
+            $stmtOld = mysqli_prepare($conexao, "SELECT nomeFornecedor FROM fornecedor WHERE idFornecedor = ? AND idUsuario = ?");
+            if ($stmtOld) {
+                mysqli_stmt_bind_param($stmtOld, "ii", $idFornecedor, $idUsuario);
+                mysqli_stmt_execute($stmtOld);
+                $resOld = mysqli_stmt_get_result($stmtOld);
+                if ($rowOld = mysqli_fetch_assoc($resOld)) {
+                    $nomeAntigo = $rowOld['nomeFornecedor'];
+                }
+                mysqli_stmt_close($stmtOld);
+            }
+
             $sql = "UPDATE fornecedor SET nomeFornecedor = ?, email = ?, telefone = ?, endereco = ?, cidade = ?, uf = ?, cnpj = ?, segmento = ? WHERE idFornecedor = ? AND idUsuario = ?";
             $stmt = mysqli_prepare($conexao, $sql);
             mysqli_stmt_bind_param($stmt, "ssssssssii", $nomeFornecedor, $email, $telefone, $endereco, $cidade, $uf, $cnpj, $segmento, $idFornecedor, $idUsuario);
             
             if (mysqli_stmt_execute($stmt)) {
+                if (!empty($nomeAntigo) && $nomeAntigo !== $nomeFornecedor) {
+                    $stmtSync = mysqli_prepare($conexao, "UPDATE produto SET nomeFornecedor = ? WHERE nomeFornecedor = ? AND idUsuario = ?");
+                    if ($stmtSync) {
+                        mysqli_stmt_bind_param($stmtSync, "ssi", $nomeFornecedor, $nomeAntigo, $idUsuario);
+                        mysqli_stmt_execute($stmtSync);
+                        mysqli_stmt_close($stmtSync);
+                    }
+                }
                 $_SESSION['flash_mensagem'] = ['tipo' => 'sucesso', 'texto' => "Fornecedor '{$nomeFornecedor}' atualizado com sucesso!"];
             } else {
                 error_log("Erro ao atualizar fornecedor: " . mysqli_error($conexao));

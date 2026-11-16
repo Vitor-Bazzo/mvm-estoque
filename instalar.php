@@ -5,19 +5,21 @@
  */
 
 header('Content-Type: text/html; charset=UTF-8');
+require_once __DIR__ . '/config/conexao.php';
 
-$host = 'sql311.infinityfree.com';
-$user = 'if0_42798246';
-$pass = 'DA3oa2pkLHi';
+$host = '127.0.0.1';
+$user = 'root';
+$pass = '';
 
 // Detecta se está rodando localmente no XAMPP ou na nuvem
 $hostServidor = $_SERVER['HTTP_HOST'] ?? '';
 $isLocal = empty($hostServidor) || in_array(explode(':', $hostServidor)[0], ['localhost', '127.0.0.1']);
 
-if ($isLocal) {
-    $host = '127.0.0.1';
-    $user = 'root';
-    $pass = '';
+if (!$isLocal && file_exists(__DIR__ . '/config/conexao_producao.php')) {
+    require_once __DIR__ . '/config/conexao_producao.php';
+    $host = defined('DB_HOST') ? DB_HOST : $host;
+    $user = defined('DB_USER') ? DB_USER : $user;
+    $pass = defined('DB_PASS') ? DB_PASS : $pass;
 }
 
 // 1. Tenta conectar ao servidor MySQL sem especificar banco para listar os bancos existentes
@@ -50,12 +52,30 @@ $relatorioInstalacao = [];
 $sucessoTotal = false;
 
 if ($acao === 'instalar' && !empty($bancoSelecionado) && $conexaoInicial) {
-    if (@mysqli_select_db($conexaoInicial, $bancoSelecionado)) {
-        mysqli_set_charset($conexaoInicial, 'utf8mb4');
+    if (!validarTokenCSRF()) {
+        $erroInstalacao = "Token de segurança inválido. Recarregue a página e tente novamente.";
+    } elseif (@mysqli_select_db($conexaoInicial, $bancoSelecionado)) {
+        // Verifica se o banco já possui usuários cadastrados (exige ser admin logado para reinstalar/resetar)
+        $jaInstalado = false;
+        $resCheck = @mysqli_query($conexaoInicial, "SELECT COUNT(*) FROM usuario");
+        if ($resCheck && ($rowCheck = mysqli_fetch_row($resCheck)) && (int)$rowCheck[0] > 0) {
+            $jaInstalado = true;
+        }
+        $isAdminLogado = isset($_SESSION['usuarioLogado']) && (($_SESSION['roleUsuario'] ?? '') === 'Administrador' || strtolower($_SESSION['usuarioLogado']) === 'admin');
+
+        if ($jaInstalado && !$isAdminLogado) {
+            $erroInstalacao = "O banco de dados selecionado já está instalado e ativo. Por segurança, apenas um Administrador autenticado pode reinstalar/resetar as tabelas.";
+        } else {
+            mysqli_set_charset($conexaoInicial, 'utf8mb4');
         
-        $caminhoSql = __DIR__ . '/sql/bdmvm_hospedagem_nuvem.sql';
+            $caminhoSql = __DIR__ . '/sql/schema_completo.sql';
+        if (!file_exists($caminhoSql)) {
+            $caminhoSql = __DIR__ . '/sql/bdmvm_hospedagem_nuvem.sql';
+        }
         if (file_exists($caminhoSql)) {
             $conteudoSql = file_get_contents($caminhoSql);
+            // Remove comandos CREATE DATABASE / USE para instalar no banco selecionado pelo usuário
+            $conteudoSql = preg_replace('/^\s*(CREATE\s+DATABASE|USE)\s+.*?;\s*$/im', '', $conteudoSql);
             
             // Desativa temporariamente chaves estrangeiras para importação limpa
             @mysqli_query($conexaoInicial, "SET FOREIGN_KEY_CHECKS = 0");
@@ -123,7 +143,8 @@ if ($acao === 'instalar' && !empty($bancoSelecionado) && $conexaoInicial) {
                 $sucessoTotal = true;
             }
         } else {
-            $erroInstalacao = "Arquivo sql/bdmvm_hospedagem_nuvem.sql não foi encontrado no servidor.";
+            $erroInstalacao = "Arquivo sql/schema_completo.sql não foi encontrado no servidor.";
+        }
         }
     }
 }
@@ -313,7 +334,14 @@ if ($acao === 'instalar' && !empty($bancoSelecionado) && $conexaoInicial) {
                 </div>
 
             <?php else: ?>
+                <?php if (!empty($erroInstalacao)): ?>
+                    <div class="instructions" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #fca5a5; margin-bottom: 18px; margin-top: 0;">
+                        <strong>⚠️ Aviso de Segurança:</strong><br>
+                        <?= htmlspecialchars($erroInstalacao) ?>
+                    </div>
+                <?php endif; ?>
                 <form action="instalar.php" method="POST">
+                    <?= campoCSRF() ?>
                     <input type="hidden" name="acao" value="instalar">
                     <div style="margin-bottom: 20px;">
                         <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 8px; color: var(--muted);">Selecione o banco de dados para instalar as tabelas:</label>

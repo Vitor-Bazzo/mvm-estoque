@@ -351,6 +351,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 data: todosValores
             }],
             chart: {
+                id: 'grafico-vendas-diarias',
                 type: 'area',
                 height: 340,
                 fontFamily: 'Plus Jakarta Sans, Inter, system-ui, sans-serif',
@@ -364,6 +365,20 @@ document.addEventListener('DOMContentLoaded', function () {
                         zoomout: true,
                         pan: false,
                         reset: true
+                    },
+                    export: {
+                        csv: {
+                            filename: 'vendas_diarias',
+                            columnDelimiter: ';',
+                            headerCategory: 'Data',
+                            headerValue: 'Faturamento'
+                        },
+                        svg: {
+                            filename: 'grafico_vendas_diarias'
+                        },
+                        png: {
+                            filename: 'grafico_vendas_diarias'
+                        }
                     }
                 },
                 zoom: {

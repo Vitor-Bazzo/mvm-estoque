@@ -24,7 +24,7 @@ $idProduto = isset($_GET['idProduto']) ? (int)$_GET['idProduto'] : 0;
 $dataInicio = !empty($_GET['dataInicio']) ? $_GET['dataInicio'] : '';
 $dataFim = !empty($_GET['dataFim']) ? $_GET['dataFim'] : '';
 
-// Monta query
+// Monta query do histórico completo para calcular saldo contábil exato
 $params = [$idUsuario];
 $types = "i";
 $where = "m.idUsuario = ?";
@@ -34,22 +34,12 @@ if ($idProduto > 0) {
     $params[] = $idProduto;
     $types .= "i";
 }
-if (!empty($dataInicio)) {
-    $where .= " AND m.dataMovimento >= ?";
-    $params[] = $dataInicio . " 00:00:00";
-    $types .= "s";
-}
-if (!empty($dataFim)) {
-    $where .= " AND m.dataMovimento <= ?";
-    $params[] = $dataFim . " 23:59:59";
-    $types .= "s";
-}
 
 $sql = "
     SELECT 
-        m.idMovimento, m.codigoPedido, m.tipoMovimento, m.quantidade, m.observacao,
+        m.idMovimento, m.idProduto, m.codigoPedido, m.tipoMovimento, m.quantidade, m.observacao,
         m.dataMovimento, m.dataDevolucao, m.valorTotal, m.lote, m.dataValidade,
-        p.nomeProduto, p.categoria,
+        p.nomeProduto, p.categoria, p.preco, p.quantidade AS estoqueAtualProduto,
         c.nomeCliente, f.nomeFornecedor
     FROM movimento m
     INNER JOIN produto p ON p.idProduto = m.idProduto
@@ -63,9 +53,32 @@ $stmt = mysqli_prepare($conexao, $sql);
 mysqli_stmt_bind_param($stmt, $types, ...$params);
 mysqli_stmt_execute($stmt);
 $res = mysqli_stmt_get_result($stmt);
-$movimentos = mysqli_fetch_all($res, MYSQLI_ASSOC);
+$todosMovimentos = mysqli_fetch_all($res, MYSQLI_ASSOC);
 mysqli_stmt_close($stmt);
 mysqli_close($conexao);
+
+$saldosPorProduto = [];
+$variacaoLiquidaPorProduto = [];
+$estoqueFisicoPorProduto = [];
+
+foreach ($todosMovimentos as $tm) {
+    $pid = (int)$tm['idProduto'];
+    $estoqueFisicoPorProduto[$pid] = (int)$tm['estoqueAtualProduto'];
+    if (!isset($variacaoLiquidaPorProduto[$pid])) {
+        $variacaoLiquidaPorProduto[$pid] = 0;
+    }
+    $qtd = (int)$tm['quantidade'];
+    $isDev = !empty($tm['dataDevolucao']);
+    if ($tm['tipoMovimento'] === 'ENTRADA') {
+        $variacaoLiquidaPorProduto[$pid] += $qtd;
+    } elseif ($tm['tipoMovimento'] === 'SAIDA' && !$isDev) {
+        $variacaoLiquidaPorProduto[$pid] -= $qtd;
+    }
+}
+
+foreach ($estoqueFisicoPorProduto as $pid => $estAtual) {
+    $saldosPorProduto[$pid] = max(0, $estAtual - ($variacaoLiquidaPorProduto[$pid] ?? 0));
+}
 
 $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
@@ -108,25 +121,38 @@ $sheet->getStyle('A4:I4')->applyFromArray($headerStyle);
 $sheet->getRowDimension(4)->setRowHeight(24);
 
 $row = 5;
-$saldo = 0;
 
-foreach ($movimentos as $m) {
+foreach ($todosMovimentos as $m) {
+    $pid = (int)$m['idProduto'];
     $qtd = (int)$m['quantidade'];
-    $val = (float)$m['valorTotal'];
+    $val = (float)$m['valorTotal'] > 0 ? (float)$m['valorTotal'] : round($qtd * (float)$m['preco'], 2);
     $tipo = $m['tipoMovimento'];
     $isDev = !empty($m['dataDevolucao']);
     $dataMov = date('d/m/Y H:i', strtotime($m['dataMovimento']));
+    $dataMovYmd = substr($m['dataMovimento'], 0, 10);
     $doc = $m['codigoPedido'] ?: ('MOV-' . $m['idMovimento']);
     $parceiro = $m['nomeCliente'] ?: ($m['nomeFornecedor'] ?: 'Interno');
 
+    if (!isset($saldosPorProduto[$pid])) {
+        $saldosPorProduto[$pid] = 0;
+    }
+
     if ($tipo === 'ENTRADA') {
-        $saldo += $qtd;
+        $saldosPorProduto[$pid] += $qtd;
         $qtdFormatada = $qtd;
     } else {
         if (!$isDev) {
-            $saldo -= $qtd;
+            $saldosPorProduto[$pid] -= $qtd;
         }
         $qtdFormatada = -$qtd;
+    }
+    $saldo = $saldosPorProduto[$pid];
+
+    if (!empty($dataInicio) && $dataMovYmd < $dataInicio) {
+        continue;
+    }
+    if (!empty($dataFim) && $dataMovYmd > $dataFim) {
+        continue;
     }
 
     $sheet->setCellValue('A' . $row, $dataMov);

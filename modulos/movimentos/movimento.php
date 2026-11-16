@@ -76,7 +76,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
 
             // Busca produto para conferência de preço e estoque com bloqueio
-            $stmtP = mysqli_prepare($conexao, "SELECT nomeProduto, preco, quantidade, dataValidade FROM produto WHERE idProduto = ? AND idUsuario = ? FOR UPDATE");
+            $stmtP = mysqli_prepare($conexao, "SELECT nomeProduto, preco, precoCusto, quantidade, dataValidade FROM produto WHERE idProduto = ? AND idUsuario = ? FOR UPDATE");
             mysqli_stmt_bind_param($stmtP, "ii", $idProduto, $idUsuario);
             mysqli_stmt_execute($stmtP);
             $resP = mysqli_stmt_get_result($stmtP);
@@ -103,7 +103,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 break;
             }
 
-            $subtotalItem = round($qtd * (float)$prod['preco'], 2);
+            $precoUnit = (float)$prod['preco'];
+            $custoUnit = (float)($prod['precoCusto'] ?? 0);
+            $subtotalItem = round($qtd * $precoUnit, 2);
             $totalPedido += $subtotalItem;
             $totalItensQtd += $qtd;
 
@@ -111,14 +113,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $itensComprados[] = [
                 'nome'          => $prod['nomeProduto'],
                 'quantidade'    => $qtd,
-                'precoUnitario' => (float)$prod['preco'],
+                'precoUnitario' => $precoUnit,
                 'subtotal'      => $subtotalItem,
                 'validade'      => $valItemFormatada
             ];
 
-            // Insere registro de movimento vinculado ao código do pedido
-            $stmtMov = mysqli_prepare($conexao, "INSERT INTO movimento (idUsuario, codigoPedido, idProduto, idCliente, tipoMovimento, quantidade, observacao, valorTotal, dataMovimento) VALUES (?, ?, ?, ?, 'SAIDA', ?, ?, ?, NOW())");
-            mysqli_stmt_bind_param($stmtMov, "isiisds", $idUsuario, $codigoPedido, $idProduto, $idCliente, $qtd, $observacao, $subtotalItem);
+            // Insere registro de movimento vinculado ao código do pedido com preço e custo congelados
+            $stmtMov = mysqli_prepare($conexao, "INSERT INTO movimento (idUsuario, codigoPedido, idProduto, idCliente, tipoMovimento, quantidade, observacao, precoUnitario, custoUnitario, valorTotal, dataMovimento) VALUES (?, ?, ?, ?, 'SAIDA', ?, ?, ?, ?, ?, NOW())");
+            mysqli_stmt_bind_param($stmtMov, "isiisddds", $idUsuario, $codigoPedido, $idProduto, $idCliente, $qtd, $observacao, $precoUnit, $custoUnit, $subtotalItem);
             mysqli_stmt_execute($stmtMov);
         }
 
@@ -187,7 +189,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             mysqli_begin_transaction($conexao);
 
             // Busca produto
-            $stmt = mysqli_prepare($conexao, "SELECT nomeProduto, preco, quantidade, lote, dataValidade FROM produto WHERE idProduto = ? AND idUsuario = ? FOR UPDATE");
+            $stmt = mysqli_prepare($conexao, "SELECT nomeProduto, preco, precoCusto, quantidade, lote, dataValidade FROM produto WHERE idProduto = ? AND idUsuario = ? FOR UPDATE");
             mysqli_stmt_bind_param($stmt, "ii", $idProduto, $idUsuario);
             mysqli_stmt_execute($stmt);
             $produto = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
@@ -232,13 +234,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit;
             }
 
-            $valorTotal = round($quantidade * (float)($produto['preco'] ?? 0), 2);
+            $precoUnit = (float)($produto['preco'] ?? 0);
+            $custoUnit = (float)($produto['precoCusto'] ?? 0);
+            $valorTotal = round($quantidade * $precoUnit, 2);
             $loteSalvar = !empty($lote) ? $lote : ($produto['lote'] ?? null);
             $validadeSalvar = !empty($dataValidade) ? $dataValidade : ($produto['dataValidade'] ?? null);
 
-            // Inserção da movimentação
-            $stmtMov = mysqli_prepare($conexao, "INSERT INTO movimento (idUsuario, idProduto, idCliente, idFornecedor, tipoMovimento, quantidade, observacao, lote, dataValidade, valorTotal, dataMovimento) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
-            mysqli_stmt_bind_param($stmtMov, "iiiisssssd", $idUsuario, $idProduto, $idCliente, $idFornecedor, $tipoMovimento, $quantidade, $observacao, $loteSalvar, $validadeSalvar, $valorTotal);
+            // Inserção da movimentação com preço e custo congelados
+            $stmtMov = mysqli_prepare($conexao, "INSERT INTO movimento (idUsuario, idProduto, idCliente, idFornecedor, tipoMovimento, quantidade, observacao, lote, dataValidade, precoUnitario, custoUnitario, valorTotal, dataMovimento) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+            mysqli_stmt_bind_param($stmtMov, "iiiisisssddd", $idUsuario, $idProduto, $idCliente, $idFornecedor, $tipoMovimento, $quantidade, $observacao, $loteSalvar, $validadeSalvar, $precoUnit, $custoUnit, $valorTotal);
             mysqli_stmt_execute($stmtMov);
             $idMovimentoInserido = mysqli_insert_id($conexao);
 
@@ -286,6 +290,70 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // AÇÃO 3: AJUSTE DE INVENTÁRIO / AUDITORIA FÍSICA
+    // -------------------------------------------------------------------------
+    elseif ($acao === 'ajuste_inventario') {
+        if (isset($_POST['idProdutoAjuste'], $_POST['estoqueFisicoReal'], $_POST['motivoAjuste'])) {
+            $idProduto = (int)$_POST['idProdutoAjuste'];
+            $estoqueFisicoReal = max(0, (int)$_POST['estoqueFisicoReal']);
+            $motivoAjuste = trim($_POST['motivoAjuste']);
+            $observacaoExtra = trim($_POST['observacaoAjuste'] ?? '');
+
+            mysqli_begin_transaction($conexao);
+            $stmt = mysqli_prepare($conexao, "SELECT nomeProduto, preco, precoCusto, quantidade, lote, dataValidade FROM produto WHERE idProduto = ? AND idUsuario = ? FOR UPDATE");
+            mysqli_stmt_bind_param($stmt, "ii", $idProduto, $idUsuario);
+            mysqli_stmt_execute($stmt);
+            $produto = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+
+            if (!$produto) {
+                mysqli_rollback($conexao);
+                $_SESSION['mensagem_movimento'] = ['erro', 'Produto não encontrado para ajuste de inventário.'];
+                mysqli_close($conexao);
+                header("Location: movimento.php");
+                exit;
+            }
+
+            $estoqueSistema = (int)$produto['quantidade'];
+            $diferenca = $estoqueFisicoReal - $estoqueSistema;
+
+            if ($diferenca === 0) {
+                mysqli_rollback($conexao);
+                $_SESSION['mensagem_movimento'] = ['ok', "O estoque do sistema para '" . htmlspecialchars($produto['nomeProduto']) . "' já confere exatamente com a contagem física ({$estoqueFisicoReal} un)."];
+                mysqli_close($conexao);
+                header("Location: movimento.php");
+                exit;
+            }
+
+            $tipoMov = ($diferenca > 0) ? 'ENTRADA' : 'SAIDA';
+            $qtdAjuste = abs($diferenca);
+            $codigoAjuste = 'INV-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -4));
+            $obsFinal = "Ajuste de Inventário ({$motivoAjuste})" . ($observacaoExtra !== '' ? ": {$observacaoExtra}" : "") . " [Sistema: {$estoqueSistema} un -> Físico: {$estoqueFisicoReal} un]";
+            $precoRef = (float)$produto['preco'] > 0 ? (float)$produto['preco'] : (float)$produto['precoCusto'];
+            $custoRef = (float)($produto['precoCusto'] ?? 0);
+            $valorTotal = round($qtdAjuste * $precoRef, 2);
+
+            $stmtUpd = mysqli_prepare($conexao, "UPDATE produto SET quantidade = ? WHERE idProduto = ? AND idUsuario = ?");
+            mysqli_stmt_bind_param($stmtUpd, "iii", $estoqueFisicoReal, $idProduto, $idUsuario);
+            mysqli_stmt_execute($stmtUpd);
+
+            $loteProd = $produto['lote'] ?? null;
+            $valProd = $produto['dataValidade'] ?? null;
+
+            $stmtMov = mysqli_prepare($conexao, "INSERT INTO movimento (idUsuario, codigoPedido, idProduto, tipoMovimento, quantidade, observacao, lote, dataValidade, motivoAjuste, precoUnitario, custoUnitario, valorTotal, dataMovimento) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+            mysqli_stmt_bind_param($stmtMov, "isisissssddd", $idUsuario, $codigoAjuste, $idProduto, $tipoMov, $qtdAjuste, $obsFinal, $loteProd, $valProd, $motivoAjuste, $precoRef, $custoRef, $valorTotal);
+            mysqli_stmt_execute($stmtMov);
+
+            mysqli_commit($conexao);
+
+            $sinal = ($diferenca > 0) ? "+{$qtdAjuste}" : "-{$qtdAjuste}";
+            $_SESSION['mensagem_movimento'] = ['ok', "Ajuste de inventário <strong>{$codigoAjuste}</strong> registrado! Saldo de '" . htmlspecialchars($produto['nomeProduto']) . "' ajustado ({$sinal} un) para <strong>{$estoqueFisicoReal} un</strong>."];
+            mysqli_close($conexao);
+            header("Location: movimento.php");
+            exit;
+        }
+    }
+
 
 
     if (is_object($conexao)) {
@@ -307,8 +375,8 @@ $lista_movimentos = [];
 
 if (is_object($conexao)) {
     try {
-        // Lista produtos do usuário com preços, lotes e validade para suporte a FEFO e WMS
-        $stmtProd = @mysqli_prepare($conexao, "SELECT idProduto, nomeProduto, quantidade, preco, precoCusto, categoria, lote, dataValidade, localizacao FROM produto WHERE idUsuario = ? ORDER BY nomeProduto ASC");
+        // Lista produtos do usuário com preços, código de barras, lotes e validade para suporte a FEFO e WMS
+        $stmtProd = @mysqli_prepare($conexao, "SELECT idProduto, codigoBarras, nomeProduto, quantidade, preco, precoCusto, categoria, lote, dataValidade, localizacao FROM produto WHERE idUsuario = ? ORDER BY nomeProduto ASC");
         if ($stmtProd) {
             mysqli_stmt_bind_param($stmtProd, "i", $idUsuario);
             mysqli_stmt_execute($stmtProd);
@@ -412,10 +480,19 @@ require_once __DIR__ . "/../../templates/header.php";
     </div>
 
     <!-- Barra de Filtro e Busca Rápida -->
-    <div class="table-filter-bar">
+    <?php $buscaInicialMov = isset($_GET['busca']) ? trim($_GET['busca']) : ''; ?>
+    <div class="table-filter-bar" style="flex-wrap: wrap; gap: 12px;">
         <div class="search-box">
             <span>🔍</span>
-            <input type="text" placeholder="Filtrar por produto, pedido, cliente, lote..." data-table-search="#tabela-movimentos">
+            <input type="text" id="input-busca-movimentos" placeholder="Filtrar por produto, pedido, cliente, lote..." data-table-search="#tabela-movimentos" value="<?= htmlspecialchars($buscaInicialMov) ?>">
+        </div>
+
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+            <button type="button" class="pbi-pill-btn active" onclick="filtrarTipoMovimento('TODOS', this)">Todos</button>
+            <button type="button" class="pbi-pill-btn" onclick="filtrarTipoMovimento('SAIDA', this)">🛒 Vendas / Saídas</button>
+            <button type="button" class="pbi-pill-btn" onclick="filtrarTipoMovimento('ENTRADA', this)">📥 Entradas</button>
+            <button type="button" class="pbi-pill-btn" onclick="filtrarTipoMovimento('AJUSTE', this)">⚖️ Ajustes</button>
+            <button type="button" class="pbi-pill-btn" onclick="filtrarTipoMovimento('ESTORNADO', this)">↩️ Estornados</button>
         </div>
 
         <div style="font-size: 13px; color: var(--text-muted); font-weight: 600;">
@@ -444,11 +521,12 @@ require_once __DIR__ . "/../../templates/header.php";
                             <?php 
                                 $isSaida = $m['tipoMovimento'] === 'SAIDA';
                                 $isDevolvido = !empty($m['dataDevolucao']);
+                                $isAjuste = !empty($m['motivoAjuste']);
 
                                 $tipoClass = $isSaida ? 'info' : 'success';
                                 $tipoTexto = $isSaida ? 'Saída' : 'Entrada';
                             ?>
-                            <tr>
+                            <tr data-tipo-mov="<?= $m['tipoMovimento'] ?>" data-ajuste="<?= $isAjuste ? '1' : '0' ?>" data-estornado="<?= $isDevolvido ? '1' : '0' ?>">
                                 <td>
                                     <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted);">
                                         <?= date('d/m/Y H:i', strtotime($m['dataMovimento'])) ?>
@@ -458,6 +536,11 @@ require_once __DIR__ . "/../../templates/header.php";
                                     <span class="status-pill <?= $tipoClass ?>">
                                         <?= $tipoTexto ?>
                                     </span>
+                                    <?php if ($isAjuste): ?>
+                                        <span class="status-pill neutral" style="font-size: 10px; padding: 1px 6px; margin-left: 3px;" title="Motivo do Ajuste: <?= htmlspecialchars($m['motivoAjuste']) ?>">
+                                            ⚖️ <?= htmlspecialchars($m['motivoAjuste']) ?>
+                                        </span>
+                                    <?php endif; ?>
                                     <?php if (!empty($m['codigoPedido'])): ?>
                                         <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--primary); margin-top: 3px;">
                                             <?= htmlspecialchars($m['codigoPedido']) ?>
@@ -841,7 +924,10 @@ require_once __DIR__ . "/../../templates/header.php";
                 <span>🛒</span> Venda Multi-Itens
             </button>
             <button type="button" class="tab-seg-btn" onclick="alternarAbaOperacao('rapido', this)">
-                <span>⚡</span> Movimento Rápido / Lote
+                <span>⚡</span> Movimento / Lote
+            </button>
+            <button type="button" class="tab-seg-btn" onclick="alternarAbaOperacao('ajuste', this)">
+                <span>⚖️</span> Ajuste Inventário
             </button>
         </div>
 
@@ -866,13 +952,24 @@ require_once __DIR__ . "/../../templates/header.php";
                     <!-- Card de Adição de Produtos -->
                     <div class="card-add-box">
                         <span class="card-add-title">➕ Adicionar Produto ao Pedido:</span>
+
+                        <!-- Leitor / Bipagem Rápida de Código de Barras no PDV -->
+                        <div style="margin-bottom: 12px; background: var(--card); border: 1px dashed var(--primary); border-radius: var(--radius-sm); padding: 9px 12px;">
+                            <label for="inp-bipagem-rapida" style="display: block; font-size: 10.5px; font-weight: 800; text-transform: uppercase; color: var(--primary); margin-bottom: 4px;">
+                                ⚡ Leitor de Código de Barras / Bipagem Rápida (PDV):
+                            </label>
+                            <div style="display: flex; gap: 6px;">
+                                <input type="text" id="inp-bipagem-rapida" placeholder="Bipe a etiqueta (ex: MVM000001), Lote ou digite o nome e tecle Enter..." style="flex: 1; padding: 7px 10px; font-size: 12.5px; font-family: 'JetBrains Mono', monospace; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-subtle); color: var(--text);" onkeydown="if(event.key==='Enter'){event.preventDefault(); biparProdutoCarrinho();}">
+                                <button type="button" onclick="biparProdutoCarrinho()" class="btn-secondary" style="padding: 7px 12px; font-size: 12px; white-space: nowrap;">Bipar ↵</button>
+                            </div>
+                        </div>
                         
                         <div class="form-group" style="margin-bottom: 12px;">
                             <label for="sel-add-produto" style="font-size: 11px; text-transform: uppercase; color: var(--text-muted);">Produto em Estoque:</label>
                             <select id="sel-add-produto" onchange="atualizarInfoProdutoCarrinho()">
                                 <option value="">-- Selecione o Produto --</option>
                                 <?php foreach($lista_produtos as $p): ?>
-                                    <option value="<?= $p['idProduto'] ?>" data-preco="<?= $p['preco'] ?>" data-estoque="<?= $p['quantidade'] ?>" data-nome="<?= htmlspecialchars($p['nomeProduto']) ?>" data-localizacao="<?= htmlspecialchars($p['localizacao'] ?? 'A-01-01') ?>" data-lote="<?= htmlspecialchars($p['lote'] ?? '') ?>" data-validade="<?= $p['dataValidade'] ? date('d/m/Y', strtotime($p['dataValidade'])) : '' ?>">
+                                    <option value="<?= $p['idProduto'] ?>" data-ean="<?= htmlspecialchars($p['codigoBarras'] ?? '') ?>" data-preco="<?= $p['preco'] ?>" data-estoque="<?= $p['quantidade'] ?>" data-nome="<?= htmlspecialchars($p['nomeProduto']) ?>" data-localizacao="<?= htmlspecialchars($p['localizacao'] ?? 'A-01-01') ?>" data-lote="<?= htmlspecialchars($p['lote'] ?? '') ?>" data-validade="<?= $p['dataValidade'] ? date('d/m/Y', strtotime($p['dataValidade'])) : '' ?>">
                                         <?= htmlspecialchars($p['nomeProduto']) ?> &bull; R$ <?= number_format((float)$p['preco'], 2, ',', '.') ?> (Disp: <?= $p['quantidade'] ?> un) [📍 <?= htmlspecialchars($p['localizacao'] ?? 'A-01-01') ?>]
                                     </option>
                                 <?php endforeach; ?>
@@ -1028,6 +1125,66 @@ require_once __DIR__ . "/../../templates/header.php";
             </form>
         </div>
 
+        <!-- ABA 3: AJUSTE DE INVENTÁRIO / AUDITORIA DE CONTAGEM FÍSICA -->
+        <div id="aba-ajuste" class="conteudo-aba" style="display: none;">
+            <form action="movimento.php" method="POST">
+                <?= campoCSRF() ?>
+                <input type="hidden" name="acao" value="ajuste_inventario">
+
+                <div class="drawer-body">
+                    <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 16px; font-size: 12.5px; color: var(--text);">
+                        <strong>⚖️ Conciliação de Inventário Físico:</strong> Informe a quantidade real contada na prateleira. O sistema calculará automaticamente a sobra ou perda e registrará o lançamento auditado no Kardex.
+                    </div>
+
+                    <div class="form-group">
+                        <label for="idProdutoAjuste">Produto Auditado *</label>
+                        <select name="idProdutoAjuste" id="idProdutoAjuste" required onchange="atualizarCalculoAjuste()">
+                            <option value="">-- Selecione o Produto --</option>
+                            <?php foreach($lista_produtos as $pAj): ?>
+                                <option value="<?= $pAj['idProduto'] ?>" data-estoque="<?= (int)$pAj['quantidade'] ?>" data-loc="<?= htmlspecialchars($pAj['localizacao'] ?? 'A-01-01') ?>">
+                                    <?= htmlspecialchars($pAj['nomeProduto']) ?> (Saldo Sistema: <?= (int)$pAj['quantidade'] ?> un) [📍 <?= htmlspecialchars($pAj['localizacao'] ?? 'A-01-01') ?>]
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>Saldo Atual no Sistema</label>
+                            <input type="text" id="inp-estoque-sistema" value="-" readonly style="font-family: 'JetBrains Mono', monospace; font-weight: 700; opacity: 0.75; cursor: not-allowed;">
+                        </div>
+                        <div class="form-group">
+                            <label for="estoqueFisicoReal">Contagem Física Real (Prateleira) *</label>
+                            <input type="number" name="estoqueFisicoReal" id="estoqueFisicoReal" min="0" required placeholder="Qtd contada..." oninput="atualizarCalculoAjuste()" style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">
+                        </div>
+                    </div>
+
+                    <div id="box-divergencia-ajuste" style="display: none; padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 16px; font-size: 13px; font-weight: 700;"></div>
+
+                    <div class="form-group">
+                        <label for="motivoAjuste">Motivo Oficial do Ajuste *</label>
+                        <select name="motivoAjuste" id="motivoAjuste" required>
+                            <option value="Contagem de Inventário">📋 Contagem de Inventário Físico</option>
+                            <option value="Avaria / Quebra">🛠️ Avaria / Produto Danificado</option>
+                            <option value="Perda por Validade (FEFO)">⏳ Baixa por Vencimento de Validade</option>
+                            <option value="Sobra Física Identificada">📦 Sobra Física Identificada</option>
+                            <option value="Correção de Lançamento">✏️ Correção de Erro Operacional</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="observacaoAjuste">Justificativa / Observações de Auditoria</label>
+                        <textarea name="observacaoAjuste" id="observacaoAjuste" rows="2" placeholder="Ex: Conferência mensal realizada pelo operador..."></textarea>
+                    </div>
+                </div>
+
+                <div class="drawer-footer-actions">
+                    <button type="button" class="btn-acao-cancelar" data-close-modal>Cancelar</button>
+                    <button type="submit" class="btn-acao-confirmar">Aplicar Ajuste de Estoque</button>
+                </div>
+            </form>
+        </div>
+
     </div>
 </div>
 
@@ -1065,6 +1222,120 @@ require_once __DIR__ . "/../../templates/header.php";
 
         document.getElementById('aba-carrinho').style.display = (aba === 'carrinho') ? 'block' : 'none';
         document.getElementById('aba-rapido').style.display = (aba === 'rapido') ? 'block' : 'none';
+        const elAjuste = document.getElementById('aba-ajuste');
+        if (elAjuste) elAjuste.style.display = (aba === 'ajuste') ? 'block' : 'none';
+    }
+
+    function biparProdutoCarrinho() {
+        const inp = document.getElementById('inp-bipagem-rapida');
+        const sel = document.getElementById('sel-add-produto');
+        if (!inp || !sel) return;
+
+        const termo = inp.value.trim().toUpperCase();
+        if (!termo) return;
+
+        // Suporta código de etiqueta MVM000001, #000001, ID numérico puro, lote ou nome
+        let idProcurado = null;
+        const matchMvm = termo.match(/^(?:MVM|#)?0*(\d+)$/);
+        if (matchMvm) {
+            idProcurado = parseInt(matchMvm[1], 10);
+        }
+
+        let opcaoEncontrada = null;
+        for (let i = 0; i < sel.options.length; i++) {
+            const opt = sel.options[i];
+            if (!opt.value) continue;
+            const idOpt = parseInt(opt.value, 10);
+            const eanOpt = (opt.dataset.ean || '').toUpperCase();
+            const loteOpt = (opt.dataset.lote || '').toUpperCase();
+            const nomeOpt = (opt.dataset.nome || '').toUpperCase();
+
+            if ((eanOpt && eanOpt === termo) || (idProcurado !== null && idOpt === idProcurado) || (loteOpt && loteOpt === termo) || nomeOpt.includes(termo)) {
+                opcaoEncontrada = opt;
+                break;
+            }
+        }
+
+        if (opcaoEncontrada) {
+            sel.value = opcaoEncontrada.value;
+            adicionarItemAoCarrinho();
+            inp.value = '';
+            inp.focus();
+        } else {
+            alert(`Nenhum produto encontrado para o código/termo "${inp.value}".`);
+            inp.select();
+        }
+    }
+
+    function atualizarCalculoAjuste() {
+        const sel = document.getElementById('idProdutoAjuste');
+        const inpSistema = document.getElementById('inp-estoque-sistema');
+        const inpFisico = document.getElementById('estoqueFisicoReal');
+        const boxDiv = document.getElementById('box-divergencia-ajuste');
+        if (!sel || !inpSistema || !inpFisico || !boxDiv) return;
+
+        const opt = sel.options[sel.selectedIndex];
+        if (!opt || !opt.value) {
+            inpSistema.value = '-';
+            boxDiv.style.display = 'none';
+            return;
+        }
+
+        const estSistema = parseInt(opt.dataset.estoque || '0', 10);
+        inpSistema.value = estSistema + ' un';
+
+        if (inpFisico.value === '') {
+            inpFisico.value = estSistema;
+        }
+
+        const estFisico = parseInt(inpFisico.value, 10);
+        if (isNaN(estFisico)) {
+            boxDiv.style.display = 'none';
+            return;
+        }
+
+        const diff = estFisico - estSistema;
+        boxDiv.style.display = 'block';
+        if (diff === 0) {
+            boxDiv.style.background = 'rgba(148, 163, 184, 0.12)';
+            boxDiv.style.color = 'var(--text-muted)';
+            boxDiv.style.border = '1px solid var(--border)';
+            boxDiv.textContent = '✓ Sem divergência: Contagem física igual ao saldo do sistema (' + estSistema + ' un).';
+        } else if (diff > 0) {
+            boxDiv.style.background = 'rgba(16, 185, 129, 0.12)';
+            boxDiv.style.color = '#10b981';
+            boxDiv.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+            boxDiv.textContent = `📈 Sobra identificada: +${diff} un (Gerará ENTRADA de ajuste para ${estFisico} un).`;
+        } else {
+            boxDiv.style.background = 'rgba(239, 68, 68, 0.12)';
+            boxDiv.style.color = '#ef4444';
+            boxDiv.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+            boxDiv.textContent = `📉 Baixa / Perda identificada: ${diff} un (Gerará SAÍDA de ajuste para ${estFisico} un).`;
+        }
+    }
+
+    function filtrarTipoMovimento(filtro, btn) {
+        if (btn && btn.parentElement) {
+            btn.parentElement.querySelectorAll('.pbi-pill-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        const rows = document.querySelectorAll('#tabela-movimentos tbody tr:not(.empty-row):not(.empty-search-row)');
+        let visiveis = 0;
+        rows.forEach(row => {
+            const tipo = row.getAttribute('data-tipo-mov');
+            const isAjuste = row.getAttribute('data-ajuste') === '1';
+            const isEstornado = row.getAttribute('data-estornado') === '1';
+            let mostrar = true;
+            if (filtro === 'SAIDA') mostrar = (tipo === 'SAIDA' && !isEstornado);
+            else if (filtro === 'ENTRADA') mostrar = (tipo === 'ENTRADA' && !isEstornado);
+            else if (filtro === 'AJUSTE') mostrar = isAjuste;
+            else if (filtro === 'ESTORNADO') mostrar = isEstornado;
+
+            row.style.display = mostrar ? '' : 'none';
+            if (mostrar) visiveis++;
+        });
+        const counter = document.querySelector('[data-item-counter]');
+        if (counter) counter.textContent = visiveis;
     }
 
     function atualizarInfoProdutoCarrinho() {

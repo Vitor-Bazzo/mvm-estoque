@@ -39,9 +39,12 @@ $dadosBI = obterDadosDashboardBI();
                         <span class="pbi-tag-pulse"></span>
                         Atualizado (<?= date('d/m/Y H:i') ?>)
                     </div>
-                    <a href="<?= url('exportacao/relatorio_balanco_pdf.php') ?>" target="_blank" class="pbi-btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #ffffff; text-decoration: none;" title="Gerar Balanço Mensal Oficial em PDF">
-                        <span>📑</span> Balanço (PDF)
-                    </a>
+                    <div style="display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); border-radius: 9px; padding: 2px 6px;">
+                        <input type="month" id="mes-balanco-dash" value="<?= date('Y-m') ?>" style="border: none; background: transparent; color: var(--pbi-text-main); font-size: 12px; font-weight: 600; outline: none; padding: 4px;" title="Mês de referência do Balanço">
+                        <a href="<?= url('exportacao/relatorio_balanco_pdf.php') ?>" onclick="this.href='<?= url('exportacao/relatorio_balanco_pdf.php') ?>?mes=' + document.getElementById('mes-balanco-dash').value" target="_blank" class="pbi-btn" style="border: none; box-shadow: none; padding: 6px 10px;" title="Gerar Balanço Mensal Oficial em PDF">
+                            <span>📑</span> Balanço (PDF)
+                        </a>
+                    </div>
                     <a href="<?= url('exportacao/relatorio_inventario_pdf.php') ?>" target="_blank" class="pbi-btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #ffffff; text-decoration: none;" title="Folha Oficial de Inventário Físico para Auditoria">
                         <span>📋</span> Inventário (PDF)
                     </a>
@@ -51,7 +54,7 @@ $dadosBI = obterDadosDashboardBI();
                 </div>
             </div>
 
-            <!-- ALERTA DE PRODUTOS COM ESTOQUE BAIXO (< 20 UNIDADES) -->
+            <!-- ALERTA DE PRODUTOS COM ESTOQUE BAIXO (<= ESTOQUE MÍNIMO) -->
             <?php if (!empty($dadosBI['produtos_estoque_baixo'])): ?>
                 <div class="pbi-stock-alert-panel">
                     <div class="pbi-stock-alert-header">
@@ -64,11 +67,11 @@ $dadosBI = obterDadosDashboardBI();
                                 <div class="pbi-stock-alert-title-row">
                                     <h2>Alerta de Estoque Crítico</h2>
                                     <span class="pbi-stock-badge-count">
-                                        <?= count($dadosBI['produtos_estoque_baixo']) ?> <?= count($dadosBI['produtos_estoque_baixo']) === 1 ? 'produto acabando' : 'produtos acabando' ?> (&lt; 20 un)
+                                        <?= count($dadosBI['produtos_estoque_baixo']) ?> <?= count($dadosBI['produtos_estoque_baixo']) === 1 ? 'produto em nível crítico' : 'produtos em nível crítico' ?>
                                     </span>
                                 </div>
                                 <p>
-                                    Os seguintes itens estão abaixo do estoque de segurança (menos de 20 unidades) e precisam de reposição:
+                                    Os seguintes itens atingiram ou estão abaixo do estoque mínimo de segurança e precisam de reposição:
                                 </p>
                             </div>
                         </div>
@@ -95,7 +98,8 @@ $dadosBI = obterDadosDashboardBI();
                         <?php foreach ($dadosBI['produtos_estoque_baixo'] as $item): ?>
                             <?php 
                                 $qtd = (int)$item['quantidade'];
-                                $porcentagemBarra = min(100, max(5, round(($qtd / 20) * 100)));
+                                $minItem = max(1, (int)($item['estoqueMinimo'] ?? 10));
+                                $porcentagemBarra = min(100, max(5, round(($qtd / $minItem) * 100)));
                                 $isEsgotado = $qtd <= 0;
                             ?>
                             <div class="pbi-stock-item-card <?= $isEsgotado ? 'is-empty' : '' ?>">
@@ -592,7 +596,10 @@ $dadosBI = obterDadosDashboardBI();
             <p style="color: var(--muted); font-size: 16px; max-width: 500px; margin: 0 auto 24px;">
                 Plataforma de gestão comercial de estoque e inteligência de vendas estilo Power BI.
             </p>
-            <a href="<?= url('modulos/auth/login.php') ?>" class="cta-button" style="padding: 14px 28px; font-size: 15px;">Acessar o Sistema (Login)</a>
+            <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+                <a href="<?= url('modulos/auth/login.php') ?>" class="cta-button" style="padding: 14px 28px; font-size: 15px;">Acessar o Sistema (Login)</a>
+                <a href="<?= url('modulos/planos/planos.php') ?>" class="btn-secondary" style="padding: 14px 24px; font-size: 15px;">💎 Ver Planos &amp; Preços</a>
+            </div>
         </div>
     <?php endif; ?>
 </div>
