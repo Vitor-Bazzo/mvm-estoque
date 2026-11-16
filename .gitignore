@@ -17,3 +17,5 @@ teste_smtp.php
 *.bat
 config/conexao_producao.php
 config/email_credenciais.php
+/public/
+.vercel/

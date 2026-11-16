@@ -1,21 +1,18 @@
 {
-  "functions": {
-    "api/*.php": {
-      "runtime": "vercel-php@0.7.4"
-    }
-  },
-  "routes": [
+  "buildCommand": "node scripts/vercel_build.js",
+  "outputDirectory": "public",
+  "rewrites": [
     {
-      "src": "/(css|javaScript|img|uploads)/(.*)",
-      "dest": "/$1/$2"
+      "source": "/(css|javaScript|img|uploads)/(.*)",
+      "destination": "/$1/$2"
     },
     {
-      "src": "/(manifest\\.json|sw\\.js)",
-      "dest": "/$1"
+      "source": "/(manifest\\.json|sw\\.js)",
+      "destination": "/$1"
     },
     {
-      "src": "/(.*)",
-      "dest": "/api/index.php"
+      "source": "/(.*)",
+      "destination": "/api/index.js"
     }
   ]
 }

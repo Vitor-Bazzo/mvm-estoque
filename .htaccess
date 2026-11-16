@@ -67,4 +67,5 @@ Options -Indexes
     # Documentação & Institucional
     RewriteRule ^api_docs\.php$ docs/api_docs.php [L,QSA]
     RewriteRule ^mascote\.php$ docs/mascote.php [L,QSA]
+    RewriteRule ^api/v1/estoque\.php$ modulos/api/estoque.php [L,QSA]
 </IfModule>

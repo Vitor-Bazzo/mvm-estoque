@@ -13,7 +13,6 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-API-KEY');
 
-// Trata preflight CORS OPTIONS
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
@@ -25,9 +24,6 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// -------------------------------------------------------------------------
-// AUTENTICAÇÃO DA API (Via Sessão Ativa ou Chave de API Token por Usuário)
-// -------------------------------------------------------------------------
 $apiKeyPadrao = 'mvm_live_token_77a89b42';
 $tokenEnviado = trim($_SERVER['HTTP_X_API_KEY'] ?? ($_GET['api_key'] ?? ($_GET['token'] ?? '')));
 
@@ -46,7 +42,6 @@ $idUsuario = 0;
 if (isset($_SESSION['usuarioLogado'])) {
     $idUsuario = obterIdUsuarioLogado();
 } elseif (!empty($tokenEnviado)) {
-    // Busca usuário proprietário do token no banco
     $stmtTok = @mysqli_prepare($conexao, "SELECT idUsuario FROM usuario WHERE apiToken = ? LIMIT 1");
     if ($stmtTok) {
         mysqli_stmt_bind_param($stmtTok, "s", $tokenEnviado);
@@ -57,7 +52,6 @@ if (isset($_SESSION['usuarioLogado'])) {
         }
         mysqli_stmt_close($stmtTok);
     }
-    // Fallback para token padrão / demo
     if ($idUsuario <= 0 && ($tokenEnviado === $apiKeyPadrao || $tokenEnviado === 'mvm_demo')) {
         $idUsuario = 1;
     }
@@ -77,9 +71,6 @@ if ($idUsuario <= 0) {
 
 $metodo = $_SERVER['REQUEST_METHOD'];
 
-// =========================================================================
-// MÉTODO 1: GET - CONSULTA DE ESTOQUE E LOCALIZAÇÕES WMS
-// =========================================================================
 if ($metodo === 'GET') {
     $busca = isset($_GET['busca']) ? trim($_GET['busca']) : '';
     $statusFiltro = isset($_GET['status']) ? strtoupper(trim($_GET['status'])) : '';
@@ -167,9 +158,6 @@ if ($metodo === 'GET') {
     exit;
 }
 
-// =========================================================================
-// MÉTODO 2: POST - LANÇAMENTO AUTOMATIZADO DE MOVIMENTAÇÃO (BAIXA / ENTRADA)
-// =========================================================================
 if ($metodo === 'POST') {
     $rawInput = file_get_contents('php://input');
     $payload = json_decode($rawInput, true);
@@ -203,7 +191,6 @@ if ($metodo === 'POST') {
         exit;
     }
 
-    // Inicia transação ACID
     mysqli_begin_transaction($conexao);
 
     $stmtP = mysqli_prepare($conexao, "SELECT idProduto, nomeProduto, quantidade, preco, precoCusto, lote, dataValidade, localizacao FROM produto WHERE idProduto = ? AND idUsuario = ? FOR UPDATE");
@@ -239,7 +226,6 @@ if ($metodo === 'POST') {
         exit;
     }
 
-    // Atualiza o estoque do produto
     if ($tipo === 'SAIDA') {
         $stmtUpd = mysqli_prepare($conexao, "UPDATE produto SET quantidade = quantidade - ? WHERE idProduto = ? AND idUsuario = ?");
         mysqli_stmt_bind_param($stmtUpd, "iii", $quantidade, $idProduto, $idUsuario);
@@ -255,7 +241,6 @@ if ($metodo === 'POST') {
     $valorTotal = round($quantidade * $valorUnitario, 2);
     $codigoPedido = 'API-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -4));
 
-    // Registra a movimentação no histórico com precoUnitario e custoUnitario congelados
     $stmtMov = mysqli_prepare($conexao, "
         INSERT INTO movimento (
             idUsuario, idProduto, tipoMovimento, quantidade, observacao,

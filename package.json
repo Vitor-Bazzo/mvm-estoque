@@ -1,0 +1,9 @@
+{
+  "name": "mvm-estoque",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sistema de Gestão de Estoque, Logística WMS e Inteligência Comercial Power BI",
+  "scripts": {
+    "build": "node scripts/vercel_build.js"
+  }
+}
