@@ -15,8 +15,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $email = trim($_POST['email']);
         $senha = $_POST['senha'];
         $planoEscolhido = in_array(strtoupper($_POST['plano'] ?? ''), ['ESSENCIAL', 'PADRAO', 'PREMIUM']) ? strtoupper($_POST['plano']) : 'ESSENCIAL';
+        $aceitouTermos = isset($_POST['aceitou_termos']) && $_POST['aceitou_termos'] === '1';
 
-        if (strlen($senha) < 6) {
+        if (!$aceitouTermos) {
+            $mensagemerro = "Você precisa ler e aceitar os Termos e Condições de Uso para criar sua conta.";
+        } elseif (strlen($senha) < 6) {
             $mensagemerro = "A senha deve conter no mínimo 6 caracteres.";
         } elseif (!empty($usuario) && !empty($email) && !empty($senha)) {
             $conexao = conectar(); 
@@ -36,7 +39,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 } else {
                     mysqli_stmt_close($stmtCheck);
                     $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
-                    $sqlInsert = "INSERT INTO usuario (nomeUsuario, emailUsuario, senhaUsuario, planoAssinatura, cicloPlano, validadePlano) VALUES (?, ?, ?, ?, 'MENSAL', DATE_ADD(CURDATE(), INTERVAL 30 DAY))";
+                    $sqlInsert = "INSERT INTO usuario (nomeUsuario, emailUsuario, senhaUsuario, planoAssinatura, cicloPlano, validadePlano, dataAceiteTermos) VALUES (?, ?, ?, ?, 'MENSAL', DATE_ADD(CURDATE(), INTERVAL 30 DAY), NOW())";
                     $stmtInsert = mysqli_prepare($conexao, $sqlInsert);
                     mysqli_stmt_bind_param($stmtInsert, "ssss", $usuario, $email, $senhaHash, $planoEscolhido);
                     
@@ -126,7 +129,17 @@ require_once __DIR__ . "/../../templates/header.php";
                 </select>
             </div>
 
-            <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-size: 14px; margin-top: 8px;">
+            <!-- Aceite Obrigatório dos Termos e Condições (LGPD) -->
+            <div class="form-group" style="background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 14px;">
+                <label style="display: flex; align-items: flex-start; gap: 10px; font-weight: 500; font-size: 12.5px; color: var(--text); margin: 0; cursor: pointer; line-height: 1.45;">
+                    <input type="checkbox" id="aceitou_termos" name="aceitou_termos" value="1" required style="width: 17px; height: 17px; margin-top: 2px; flex-shrink: 0; cursor: pointer; accent-color: var(--primary);">
+                    <span>
+                        Li e concordo com os <a href="#" onclick="abrirModalTermos(event)" style="font-weight: 700; text-decoration: underline;">Termos e Condições de Uso</a> e com a <a href="#" onclick="abrirModalTermos(event)" style="font-weight: 700; text-decoration: underline;">Política de Privacidade (LGPD)</a> do Sistema MVM. *
+                    </span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-size: 14px; margin-top: 4px;">
                 Finalizar Cadastro
             </button>
         </form>
@@ -137,13 +150,90 @@ require_once __DIR__ . "/../../templates/header.php";
     </div>
 </div>
 
+<!-- MODAL DE TERMOS E CONDIÇÕES DE USO & POLÍTICA DE PRIVACIDADE (LGPD) -->
+<div id="modal-termos-uso" class="modal-container modal-dialog-center">
+    <div class="confirm-dialog-card" style="max-width: 600px; text-align: left;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid var(--border);">
+            <div>
+                <h3 style="margin: 0; font-size: 18px;">📜 Termos e Condições de Uso &amp; LGPD</h3>
+                <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-muted);">MVM Gestão de Estoque &amp; Inteligência Comercial</p>
+            </div>
+            <button type="button" class="btn-close-drawer" onclick="fecharModalTermos()">✕</button>
+        </div>
+
+        <div style="max-height: 340px; overflow-y: auto; padding: 14px 16px; background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 12.5px; color: var(--text); line-height: 1.6; margin-bottom: 18px;">
+            <h4 style="font-size: 13.5px; margin-bottom: 6px; color: var(--primary);">1. Aceitação dos Termos</h4>
+            <p style="margin-bottom: 12px;">
+                Ao criar uma conta no <strong>Sistema MVM Estoque</strong>, o usuário declara ter lido, compreendido e aceitado integralmente as regras operacionais, comerciais e de segurança estabelecidas neste instrumento.
+            </p>
+
+            <h4 style="font-size: 13.5px; margin-bottom: 6px; color: var(--primary);">2. Uso da Plataforma e Responsabilidades</h4>
+            <p style="margin-bottom: 12px;">
+                O operador é inteiramente responsável pela veracidade dos dados cadastrados em sua conta (produtos, lotes, validades FEFO, preços, clientes, fornecedores e ajustes de inventário), bem como pelo sigilo de suas credenciais de login e chave de API (<code>X-API-KEY</code>).
+            </p>
+
+            <h4 style="font-size: 13.5px; margin-bottom: 6px; color: var(--primary);">3. Proteção de Dados e Privacidade (LGPD - Lei nº 13.709/2018)</h4>
+            <p style="margin-bottom: 12px;">
+                Em conformidade com a Lei Geral de Proteção de Dados (LGPD), os dados pessoais de clientes, fornecedores e operadores são armazenados de forma isolada por conta (<code>idUsuario</code>), com senhas criptografadas via algoritmo <strong>BCRYPT</strong> e proteção contra ataques CSRF e SQL Injection.
+            </p>
+
+            <h4 style="font-size: 13.5px; margin-bottom: 6px; color: var(--primary);">4. Planos de Assinatura e Cancelamento</h4>
+            <p style="margin-bottom: 12px;">
+                Os planos de assinatura (<strong>Essencial</strong>, <strong>Padrão</strong> e <strong>Premium</strong>) funcionam em modelo pré-pago sem fidelidade, permitindo upgrade, downgrade ou cancelamento a qualquer momento diretamente no painel.
+            </p>
+
+            <h4 style="font-size: 13.5px; margin-bottom: 6px; color: var(--primary);">5. Auditoria e Registro de Consentimento</h4>
+            <p style="margin-bottom: 0;">
+                A data e o horário exatos do aceite destes termos são gravados eletronicamente no banco de dados (<code>dataAceiteTermos</code>) para fins de conformidade legal e auditoria.
+            </p>
+        </div>
+
+        <div class="confirm-dialog-actions">
+            <button type="button" class="btn-secondary" onclick="fecharModalTermos()">Fechar</button>
+            <button type="button" class="btn-primary" onclick="aceitarTermosPeloModal()" style="justify-content: center;">
+                <span>✅</span> Li e Aceito os Termos
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
+    function abrirModalTermos(event) {
+        if (event) event.preventDefault();
+        const modal = document.getElementById('modal-termos-uso');
+        if (modal) {
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function fecharModalTermos() {
+        const modal = document.getElementById('modal-termos-uso');
+        if (modal) {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    }
+
+    function aceitarTermosPeloModal() {
+        const chk = document.getElementById('aceitou_termos');
+        if (chk) chk.checked = true;
+        fecharModalTermos();
+    }
+
     function validarSenhas(event) {
         const senha = document.getElementById('password').value;
         const confirmaSenha = document.getElementById('confirmPassword').value;
+        const termos = document.getElementById('aceitou_termos');
 
         if (senha !== confirmaSenha) {
             alert("Aviso: As senhas digitadas não coincidem. Verifique e tente novamente.");
+            event.preventDefault();
+            return false;
+        }
+
+        if (!termos || !termos.checked) {
+            alert("Aviso: Você precisa aceitar os Termos e Condições de Uso para criar sua conta.");
             event.preventDefault();
             return false;
         }

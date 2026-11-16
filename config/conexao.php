@@ -235,6 +235,9 @@ function verificarEAtualizarColunas($conexao) {
                 @mysqli_query($conexao, "ALTER TABLE usuario ADD COLUMN validadePlano DATE NULL DEFAULT NULL");
                 @mysqli_query($conexao, "UPDATE usuario SET validadePlano = DATE_ADD(CURDATE(), INTERVAL 30 DAY) WHERE validadePlano IS NULL");
             }
+            if (!isset($colsU['dataaceitetermos'])) {
+                @mysqli_query($conexao, "ALTER TABLE usuario ADD COLUMN dataAceiteTermos DATETIME NULL DEFAULT CURRENT_TIMESTAMP");
+            }
             @mysqli_query($conexao, "UPDATE usuario SET apiToken = 'mvm_live_token_77a89b42' WHERE idUsuario = 1 AND (apiToken IS NULL OR apiToken = '')");
             @mysqli_query($conexao, "UPDATE usuario SET apiToken = CONCAT('mvm_live_', SUBSTRING(MD5(CONCAT(idUsuario, nomeUsuario, 'mvm_salt')), 1, 16)) WHERE apiToken IS NULL OR apiToken = ''");
         }

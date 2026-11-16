@@ -24,6 +24,7 @@ CREATE TABLE usuario (
     planoAssinatura VARCHAR(30) NOT NULL DEFAULT 'ESSENCIAL',
     cicloPlano VARCHAR(15) NOT NULL DEFAULT 'MENSAL',
     validadePlano DATE DEFAULT NULL,
+    dataAceiteTermos DATETIME DEFAULT CURRENT_TIMESTAMP,
     apiToken VARCHAR(80) DEFAULT NULL UNIQUE,
     tokenRecuperacao VARCHAR(100) DEFAULT NULL,
     expiraRecuperacao DATETIME DEFAULT NULL
