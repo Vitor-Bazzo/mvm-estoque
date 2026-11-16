@@ -26,8 +26,13 @@ const {
   handleEtiquetas,
   handleMascote,
   handleApiRest,
-  handleExportacao
+  handleApiDocs
 } = require('../lib/mvm_pages_extra');
+const {
+  handleExportacao,
+  handleConsultaEan,
+  handleDispararAlerta
+} = require('../lib/mvm_exports');
 
 let staticAssets = {};
 try {
@@ -155,8 +160,14 @@ module.exports = async (req, res) => {
     result = handleKardex(req, query, db, session);
   } else if (basename === 'etiquetas.php' || basename === 'etiquetas') {
     result = handleEtiquetas(req, db, session);
-  } else if (basename === 'mascote.php' || basename === 'mascote' || basename === 'api_docs.php') {
+  } else if (basename === 'mascote.php' || basename === 'mascote') {
     result = handleMascote(session);
+  } else if (basename === 'api_docs.php') {
+    result = handleApiDocs(req, db, session);
+  } else if (basename === 'consulta_ean.php') {
+    result = await handleConsultaEan(query, session);
+  } else if (basename === 'disparar_alerta.php') {
+    result = handleDispararAlerta(body, db, session);
   } else if (basename === 'estoque.php') {
     result = handleApiRest(req, body, query, db, session);
   } else if (pathname.startsWith('/exportacao/')) {
@@ -174,13 +185,20 @@ module.exports = async (req, res) => {
     return res.end();
   }
 
-  if (result.json) {
+  if (result.download) {
     res.statusCode = 200;
+    res.setHeader('Content-Type', result.download.contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${result.download.filename}"`);
+    return res.end(result.download.body);
+  }
+
+  if (result.json) {
+    res.statusCode = result.statusCode || 200;
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     return res.end(JSON.stringify(result.json, null, 2));
   }
 
-  res.statusCode = 200;
+  res.statusCode = result.statusCode || 200;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Content-Disposition', 'inline');
   return res.end(result.html || '');
