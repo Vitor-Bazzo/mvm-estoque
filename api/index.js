@@ -1,8 +1,10 @@
 /**
  * Front Controller Serverless Nativo (Node.js) para Vercel
- * Garante 100% de compatibilidade com o runtime padrão Node.js 22/24 da Vercel,
- * impedindo downloads estáticos de arquivos .php e mantendo todas as rotas funcionando na nuvem.
+ * Serve tanto os assets estáticos (CSS, JS, SVG, Fotos) com MIME type exato
+ * quanto todas as rotas dinâmicas da aplicação MVM Estoque.
  */
+const fs = require('fs');
+const path = require('path');
 const querystring = require('querystring');
 const { loadDb, loadSession, serializeSessionCookie } = require('../lib/mvm_db');
 const {
@@ -26,6 +28,55 @@ const {
   handleApiRest,
   handleExportacao
 } = require('../lib/mvm_pages_extra');
+
+let staticAssets = {};
+try {
+  staticAssets = require('../lib/mvm_static_assets.json');
+} catch (e) {
+  staticAssets = {};
+}
+
+const MIME_MAP = {
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
+  '.ico': 'image/x-icon',
+  '.woff2': 'font/woff2'
+};
+
+function tryServeStaticAsset(pathname, res) {
+  const cleanPath = decodeURIComponent(pathname).replace(/\/+/g, '/');
+
+  // 1. Verifica no bundle estático pré-compilado (garantido na Lambda da Vercel)
+  const hit = staticAssets[cleanPath] || staticAssets[cleanPath.toLowerCase()];
+  if (hit) {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', hit.mime);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.end(Buffer.from(hit.b64, 'base64'));
+  }
+
+  // 2. Fallback no filesystem se for requisição de pasta estática
+  if (/^\/(css|javaScript|img|uploads)\//i.test(cleanPath) || cleanPath === '/manifest.json' || cleanPath === '/sw.js') {
+    const ext = path.extname(cleanPath).toLowerCase();
+    if (MIME_MAP[ext]) {
+      const candidate = path.join(path.resolve(__dirname, '..'), cleanPath.slice(1));
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', MIME_MAP[ext]);
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return res.end(fs.readFileSync(candidate));
+      }
+    }
+  }
+  return false;
+}
 
 function readRequestBody(req) {
   return new Promise(resolve => {
@@ -62,6 +113,12 @@ function readRequestBody(req) {
 module.exports = async (req, res) => {
   const urlObj = new URL(req.url || '/', `https://${req.headers.host || 'localhost'}`);
   const pathname = urlObj.pathname.replace(/\/+/g, '/');
+
+  // Serve imediatamente qualquer asset estático (CSS, JS, SVG, PNG, JPG, WebP)
+  if (tryServeStaticAsset(pathname, res) !== false) {
+    return;
+  }
+
   const query = Object.fromEntries(urlObj.searchParams.entries());
   const body = req.method === 'POST' ? await readRequestBody(req) : {};
 

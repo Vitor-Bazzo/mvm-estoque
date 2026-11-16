@@ -1,9 +1,9 @@
-const CACHE_NAME = 'mvm-estoque-v3';
+const CACHE_NAME = 'mvm-estoque-v5';
 const STATIC_ASSETS = [
-  'css/style.css',
-  'css/powerbi.css',
-  'img/mascote_mvm.svg',
-  'javaScript/theme.js'
+  '/css/style.css?v=5',
+  '/css/powerbi.css?v=5',
+  '/img/mascote_mvm.svg?v=5',
+  '/javaScript/theme.js?v=5'
 ];
 
 self.addEventListener('install', (event) => {
@@ -31,7 +31,6 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Para requisições estáticas, tenta cache primeiro com fallback de rede
   if (event.request.method === 'GET') {
     event.respondWith(
       fetch(event.request).catch(() => caches.match(event.request))

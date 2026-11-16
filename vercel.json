@@ -3,15 +3,7 @@
   "outputDirectory": "public",
   "rewrites": [
     {
-      "source": "/(css|javaScript|img|uploads)/(.*)",
-      "destination": "/$1/$2"
-    },
-    {
-      "source": "/(manifest\\.json|sw\\.js)",
-      "destination": "/$1"
-    },
-    {
-      "source": "/(.*)",
+      "source": "/((?!css/|javaScript/|img/|uploads/|manifest\\.json|sw\\.js).*)",
       "destination": "/api/index.js"
     }
   ]

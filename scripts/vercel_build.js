@@ -1,15 +1,33 @@
 /**
  * Script de Build Oficial para Vercel (MVM Estoque)
- * Isola apenas os arquivos estáticos (CSS, JS, Imagens, Uploads, PWA) na pasta public/
- * garantindo que NENHUM arquivo .php seja servido como download estático pela CDN da Vercel.
+ * 1. Isola os arquivos estáticos (CSS, JS, Imagens, Uploads, PWA) na pasta public/
+ * 2. Empacota um mapa estático de fallback em lib/mvm_static_assets.json para garantir
+ *    que 100% do CSS, JS, ícones SVG e fotos de produtos carreguem com o MIME type exato.
  */
 const fs = require('fs');
 const path = require('path');
 
 const rootDir = path.resolve(__dirname, '..');
 const publicDir = path.join(rootDir, 'public');
+const bundleFile = path.join(rootDir, 'lib', 'mvm_static_assets.json');
 
-function copyRecursiveSync(src, dest) {
+const MIME_MAP = {
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
+  '.ico': 'image/x-icon',
+  '.woff2': 'font/woff2'
+};
+
+const assetBundle = {};
+
+function processStaticSync(src, dest, relPrefix) {
   if (!fs.existsSync(src)) return;
   const stats = fs.statSync(src);
   if (stats.isDirectory()) {
@@ -17,12 +35,23 @@ function copyRecursiveSync(src, dest) {
       fs.mkdirSync(dest, { recursive: true });
     }
     for (const child of fs.readdirSync(src)) {
-      copyRecursiveSync(path.join(src, child), path.join(dest, child));
+      processStaticSync(
+        path.join(src, child),
+        path.join(dest, child),
+        relPrefix ? `${relPrefix}/${child}` : child
+      );
     }
   } else {
-    // Nunca copia arquivos .php ou .sql para o diretório estático público
+    const ext = path.extname(src).toLowerCase();
     if (/\.(php|sql|env|md)$/i.test(src)) return;
     fs.copyFileSync(src, dest);
+    if (MIME_MAP[ext]) {
+      const normalizedKey = '/' + relPrefix.replace(/\\/g, '/');
+      assetBundle[normalizedKey] = {
+        mime: MIME_MAP[ext],
+        b64: fs.readFileSync(src).toString('base64')
+      };
+    }
   }
 }
 
@@ -33,15 +62,16 @@ fs.mkdirSync(publicDir, { recursive: true });
 
 const staticDirs = ['css', 'javaScript', 'img', 'uploads'];
 for (const dir of staticDirs) {
-  copyRecursiveSync(path.join(rootDir, dir), path.join(publicDir, dir));
+  processStaticSync(path.join(rootDir, dir), path.join(publicDir, dir), dir);
 }
 
 const staticFiles = ['manifest.json', 'sw.js'];
 for (const file of staticFiles) {
   const srcFile = path.join(rootDir, file);
   if (fs.existsSync(srcFile)) {
-    fs.copyFileSync(srcFile, path.join(publicDir, file));
+    processStaticSync(srcFile, path.join(publicDir, file), file);
   }
 }
 
-console.log('[MVM Vercel Build] Diretório estático public/ gerado com sucesso (0 arquivos .php expostos).');
+fs.writeFileSync(bundleFile, JSON.stringify(assetBundle), 'utf8');
+console.log(`[MVM Vercel Build] ${Object.keys(assetBundle).length} assets estáticos empacotados com sucesso.`);
