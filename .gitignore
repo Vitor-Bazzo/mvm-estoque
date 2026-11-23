@@ -14,7 +14,7 @@ desktop.ini
 
 # Arquivos de teste temporários e credenciais locais/produção
 teste_smtp.php
-*.bat3
+*.bat33
 config/conexao_producao.php
 config/email_credenciais.php
 /public/
