@@ -294,7 +294,7 @@ require_once __DIR__ . "/../../templates/header.php";
                 <p id="plm-sugestoes-sub">Analisando seu perfil comercial e buscando oportunidades reais na web...</p>
             </div>
             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                <input type="text" id="input-nicho-plm" placeholder="Ex: bebidas, informatica, cosmeticos..." style="padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-subtle); color:var(--text); font-size:12.5px;">
+                <input type="text" id="input-nicho-plm" placeholder="Ex: teclado, mouse, bebidas, cosmeticos..." onkeydown="if(event.key==='Enter'){event.preventDefault();carregarSugestoesWeb();}" style="padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-subtle); color:var(--text); font-size:12.5px;">
                 <button type="button" onclick="carregarSugestoesWeb()" class="btn-primary" style="padding:8px 14px; font-size:12.5px;">🔍 Buscar na Internet</button>
             </div>
         </div>
