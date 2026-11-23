@@ -442,10 +442,10 @@ require_once __DIR__ . "/../../templates/header.php";
                     <div class="plan-price-box">
                         <div class="plan-price-row">
                             <span class="plan-currency">R$</span>
-                            <span class="plan-amount" data-mensal="89,90" data-anual="71,90">89,90</span>
+                            <span class="plan-amount" data-mensal="149,90" data-anual="119,90">149,90</span>
                             <span class="plan-period">/mês</span>
                         </div>
-                        <div class="plan-annual-note" data-note-mensal="Faturado mensalmente sem fidelidade" data-note-anual="R$ 862,80/ano (Economia de R$ 216,00)">
+                        <div class="plan-annual-note" data-note-mensal="Faturado mensalmente sem fidelidade" data-note-anual="R$ 1.438,80/ano (Economia de R$ 360,00)">
                             Faturado mensalmente sem fidelidade
                         </div>
                     </div>
@@ -465,7 +465,7 @@ require_once __DIR__ . "/../../templates/header.php";
                 <?php if ($idUsuario > 0 && $planoAtual === 'ESSENCIAL'): ?>
                     <button type="button" class="btn-plan-select btn-plan-current" disabled>✓ Seu Plano Atual</button>
                 <?php elseif ($idUsuario > 0): ?>
-                    <button type="button" class="btn-plan-select btn-plan-essencial" onclick="abrirCheckoutPlano('ESSENCIAL', 'Essencial', '89,90', '71,90')">
+                    <button type="button" class="btn-plan-select btn-plan-essencial" onclick="abrirCheckoutPlano('ESSENCIAL', 'Essencial', '149,90', '119,90')">
                         Mudar para Essencial
                     </button>
                 <?php else: ?>
@@ -488,10 +488,10 @@ require_once __DIR__ . "/../../templates/header.php";
                     <div class="plan-price-box">
                         <div class="plan-price-row">
                             <span class="plan-currency">R$</span>
-                            <span class="plan-amount" data-mensal="199,90" data-anual="159,90">199,90</span>
+                            <span class="plan-amount" data-mensal="349,90" data-anual="279,90">349,90</span>
                             <span class="plan-period">/mês</span>
                         </div>
-                        <div class="plan-annual-note" data-note-mensal="Faturado mensalmente sem fidelidade" data-note-anual="R$ 1.918,80/ano (Economia de R$ 480,00)">
+                        <div class="plan-annual-note" data-note-mensal="Faturado mensalmente sem fidelidade" data-note-anual="R$ 3.358,80/ano (Economia de R$ 840,00)">
                             Faturado mensalmente sem fidelidade
                         </div>
                     </div>
@@ -511,7 +511,7 @@ require_once __DIR__ . "/../../templates/header.php";
                 <?php if ($idUsuario > 0 && $planoAtual === 'PADRAO'): ?>
                     <button type="button" class="btn-plan-select btn-plan-current" disabled>✓ Seu Plano Atual</button>
                 <?php elseif ($idUsuario > 0): ?>
-                    <button type="button" class="btn-plan-select btn-plan-padrao" onclick="abrirCheckoutPlano('PADRAO', 'Padrão Comercial', '199,90', '159,90')">
+                    <button type="button" class="btn-plan-select btn-plan-padrao" onclick="abrirCheckoutPlano('PADRAO', 'Padrão Comercial', '349,90', '279,90')">
                         <span>⚡</span> Assinar Plano Padrão
                     </button>
                 <?php else: ?>
@@ -533,12 +533,10 @@ require_once __DIR__ . "/../../templates/header.php";
                 <div class="plan-body">
                     <div class="plan-price-box">
                         <div class="plan-price-row">
-                            <span class="plan-currency">R$</span>
-                            <span class="plan-amount" data-mensal="449,90" data-anual="359,90">449,90</span>
-                            <span class="plan-period">/mês</span>
+                            <span class="plan-amount" data-mensal="Preços a consultar" data-anual="Preços a consultar" style="font-size: 26px; line-height: 1.2;">Preços a consultar</span>
                         </div>
-                        <div class="plan-annual-note" data-note-mensal="Faturado mensalmente sem fidelidade" data-note-anual="R$ 4.318,80/ano (Economia de R$ 1.080,00)">
-                            Faturado mensalmente sem fidelidade
+                        <div class="plan-annual-note" data-note-mensal="Valor sob medida conforme o porte da empresa" data-note-anual="Condições especiais no contrato anual sob medida">
+                            Valor sob medida conforme o porte da empresa
                         </div>
                     </div>
 
@@ -557,12 +555,12 @@ require_once __DIR__ . "/../../templates/header.php";
                 <?php if ($idUsuario > 0 && $planoAtual === 'PREMIUM'): ?>
                     <button type="button" class="btn-plan-select btn-plan-current" disabled>👑 Seu Plano Atual (Máximo)</button>
                 <?php elseif ($idUsuario > 0): ?>
-                    <button type="button" class="btn-plan-select btn-plan-premium" onclick="abrirCheckoutPlano('PREMIUM', 'Premium Enterprise', '449,90', '359,90')">
-                        <span>👑</span> Fazer Upgrade para Premium
-                    </button>
+                    <a href="mailto:mvm.centralestoque@gmail.com?subject=Proposta%20Plano%20Premium%20Enterprise%20-%20MVM%20Estoque" class="btn-plan-select btn-plan-premium">
+                        <span>👑</span> Consultar Valores
+                    </a>
                 <?php else: ?>
-                    <a href="<?= url('modulos/auth/criar_conta.php?plano=PREMIUM') ?>" class="btn-plan-select btn-plan-premium">
-                        <span>👑</span> Começar com Premium
+                    <a href="mailto:mvm.centralestoque@gmail.com?subject=Proposta%20Plano%20Premium%20Enterprise%20-%20MVM%20Estoque" class="btn-plan-select btn-plan-premium">
+                        <span>👑</span> Consultar Valores
                     </a>
                 <?php endif; ?>
             </div>
