@@ -128,38 +128,38 @@ module.exports = async (req, res) => {
   const body = req.method === 'POST' ? await readRequestBody(req) : {};
 
   const session = loadSession(req);
-  const db = loadDb(session);
+  const db = await loadDb(session);
   const basename = pathname.split('/').filter(Boolean).pop() || 'index.php';
 
   let result;
 
   if (pathname === '/' || basename === 'index.php' || basename === 'dashboard.php' || pathname === '/api/index' || pathname === '/api/index.js') {
-    result = handleDashboard(req, query, db, session);
+    result = await handleDashboard(req, query, db, session);
   } else if (basename === 'login.php' || basename === 'login') {
-    result = handleLogin(req, body, db, session);
+    result = await handleLogin(req, body, db, session);
   } else if (basename === 'criar_conta.php' || basename === 'criar_conta') {
-    result = handleCriarConta(req, body, query, db, session);
+    result = await handleCriarConta(req, body, query, db, session);
   } else if (basename === 'esqueci_senha.php' || basename === 'esqueci_senha') {
-    result = handleEsqueciSenha(req, body, db, session);
+    result = await handleEsqueciSenha(req, body, db, session);
   } else if (basename === 'redefinir_senha.php' || basename === 'redefinir_senha') {
-    result = handleRedefinirSenha(req, body, query, db, session);
+    result = await handleRedefinirSenha(req, body, query, db, session);
   } else if (basename === 'logout.php' || basename === 'logout') {
     Object.keys(session).forEach(k => delete session[k]);
     result = { redirect: '/modulos/auth/login.php' };
   } else if (basename === 'planos.php' || basename === 'planos') {
-    result = handlePlanos(req, body, db, session);
+    result = await handlePlanos(req, body, db, session);
   } else if (['produto.php', 'produto_editar.php', 'produto_excluir.php'].includes(basename)) {
-    result = handleProdutos(req, body, query, db, session, basename);
+    result = await handleProdutos(req, body, query, db, session, basename);
   } else if (['cliente.php', 'cliente_editar.php', 'cliente_excluir.php'].includes(basename)) {
-    result = handleClientes(req, body, query, db, session, basename);
+    result = await handleClientes(req, body, query, db, session, basename);
   } else if (['fornecedor.php', 'fornecedor_editar.php', 'fornecedor_excluir.php'].includes(basename)) {
-    result = handleFornecedores(req, body, query, db, session, basename);
+    result = await handleFornecedores(req, body, query, db, session, basename);
   } else if (['movimento.php', 'movimento_devolucao.php', 'movimento_excluir.php', 'recibo.php'].includes(basename)) {
-    result = handleMovimentos(req, body, query, db, session, basename);
+    result = await handleMovimentos(req, body, query, db, session, basename);
   } else if (basename === 'kardex.php' || basename === 'kardex') {
-    result = handleKardex(req, query, db, session);
+    result = await handleKardex(req, query, db, session);
   } else if (basename === 'etiquetas.php' || basename === 'etiquetas') {
-    result = handleEtiquetas(req, db, session);
+    result = await handleEtiquetas(req, db, session);
   } else if (basename === 'mascote.php' || basename === 'mascote') {
     result = handleMascote(session);
   } else if (basename === 'api_docs.php') {
@@ -169,11 +169,11 @@ module.exports = async (req, res) => {
   } else if (basename === 'disparar_alerta.php') {
     result = handleDispararAlerta(body, db, session);
   } else if (basename === 'estoque.php') {
-    result = handleApiRest(req, body, query, db, session);
+    result = await handleApiRest(req, body, query, db, session);
   } else if (pathname.startsWith('/exportacao/')) {
     result = handleExportacao(pathname, query, db, session);
   } else {
-    result = handleDashboard(req, query, db, session);
+    result = await handleDashboard(req, query, db, session);
   }
 
   res.setHeader('Set-Cookie', serializeSessionCookie(session));
