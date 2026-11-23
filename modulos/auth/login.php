@@ -122,11 +122,11 @@ require_once __DIR__ . "/../../templates/header.php";
             </div>
         <?php endif; ?>
 
-        <form action="login.php" method="POST">
+        <form action="login.php" method="POST" autocomplete="off">
             <?= campoCSRF() ?>
             <div class="form-group">
                 <label for="usuario">Nome de Usuário ou E-mail</label>
-                <input type="text" id="usuario" name="usuario" placeholder="Digite seu usuário ou e-mail..." required autofocus>
+                <input type="text" id="usuario" name="usuario" placeholder="Digite seu usuário ou e-mail..." autocomplete="off" required autofocus>
             </div>
 
             <div class="form-group">
@@ -134,7 +134,7 @@ require_once __DIR__ . "/../../templates/header.php";
                     <label for="senha" style="margin-bottom: 0;">Senha de Acesso</label>
                     <a href="esqueci_senha.php" style="font-size: 12px; font-weight: 600;">Esqueci minha senha</a>
                 </div>
-                <input type="password" id="senha" name="senha" placeholder="••••••••" required>
+                <input type="password" id="senha" name="senha" placeholder="••••••••" autocomplete="new-password" required>
             </div>
 
 
