@@ -152,40 +152,100 @@ require_once __DIR__ . "/../../templates/header.php";
 
 <!-- MODAL DE TERMOS E CONDIÇÕES DE USO & POLÍTICA DE PRIVACIDADE (LGPD) -->
 <div id="modal-termos-uso" class="modal-container modal-dialog-center">
-    <div class="confirm-dialog-card" style="max-width: 600px; text-align: left;">
+    <div class="confirm-dialog-card" style="max-width: 740px; text-align: left;">
         <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid var(--border);">
             <div>
-                <h3 style="margin: 0; font-size: 18px;">📜 Termos e Condições de Uso &amp; LGPD</h3>
-                <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-muted);">MVM Gestão de Estoque &amp; Inteligência Comercial</p>
+                <h3 style="margin: 0; font-size: 18px;">📜 Termos de Uso e Política de Privacidade — MVM Gestão de Estoque</h3>
+                <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-muted);">Última atualização: Novembro de 2026</p>
             </div>
             <button type="button" class="btn-close-drawer" onclick="fecharModalTermos()">✕</button>
         </div>
 
-        <div style="max-height: 340px; overflow-y: auto; padding: 14px 16px; background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 12.5px; color: var(--text); line-height: 1.6; margin-bottom: 18px;">
-            <h4 style="font-size: 13.5px; margin-bottom: 6px; color: var(--primary);">1. Aceitação dos Termos</h4>
-            <p style="margin-bottom: 12px;">
-                Ao criar uma conta no <strong>Sistema MVM Estoque</strong>, o usuário declara ter lido, compreendido e aceitado integralmente as regras operacionais, comerciais e de segurança estabelecidas neste instrumento.
-            </p>
+        <div style="max-height: 400px; overflow-y: auto; padding: 14px 16px; background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 12.5px; color: var(--text); line-height: 1.65; margin-bottom: 18px;">
+            <p>Este documento estabelece as regras de utilização da plataforma SaaS (Software as a Service) <strong>MVM Gestão de Estoque</strong> e esclarece como os dados pessoais e empresariais são coletados, protegidos e tratados em conformidade com a Lei Geral de Proteção de Dados Pessoais (LGPD — Lei nº 13.709/2018) e o Marco Civil da Internet (Lei nº 12.965/2014).</p>
 
-            <h4 style="font-size: 13.5px; margin-bottom: 6px; color: var(--primary);">2. Uso da Plataforma e Responsabilidades</h4>
-            <p style="margin-bottom: 12px;">
-                O operador é inteiramente responsável pela veracidade dos dados cadastrados em sua conta (produtos, lotes, validades FEFO, preços, clientes, fornecedores e ajustes de inventário), bem como pelo sigilo de suas credenciais de login e chave de API (<code>X-API-KEY</code>).
-            </p>
+            <h4 style="font-size: 13.5px; margin: 14px 0 6px; color: var(--primary);">Parte I — Termos e Condições de Uso</h4>
 
-            <h4 style="font-size: 13.5px; margin-bottom: 6px; color: var(--primary);">3. Proteção de Dados e Privacidade (LGPD - Lei nº 13.709/2018)</h4>
-            <p style="margin-bottom: 12px;">
-                Em conformidade com a Lei Geral de Proteção de Dados (LGPD), os dados pessoais de clientes, fornecedores e operadores são armazenados de forma isolada por conta (<code>idUsuario</code>), com senhas criptografadas via algoritmo <strong>BCRYPT</strong> e proteção contra ataques CSRF e SQL Injection.
-            </p>
+            <p><strong>1. Objeto e Aceitação</strong><br>
+            O presente instrumento regula o acesso e a utilização da plataforma MVM Gestão de Estoque, voltada ao controle de inventário, movimentações de produtos, gestão de cadastros e emissão de recibos operacionais. Ao marcar a caixa de confirmação no momento do cadastro ou utilizar o sistema, o usuário declara ter lido, compreendido e manifestado seu consentimento livre, expresso e informado com todas as disposições deste documento.</p>
 
-            <h4 style="font-size: 13.5px; margin-bottom: 6px; color: var(--primary);">4. Planos de Assinatura e Cancelamento</h4>
-            <p style="margin-bottom: 12px;">
-                Os planos de assinatura (<strong>Essencial</strong>, <strong>Padrão</strong> e <strong>Premium</strong>) funcionam em modelo pré-pago sem fidelidade, permitindo upgrade, downgrade ou cancelamento a qualquer momento diretamente no painel.
-            </p>
+            <p><strong>2. Cadastro, Credenciais e Uso Adequado</strong><br>
+            O usuário é integralmente responsável pela veracidade e atualização dos dados fornecidos no cadastro, bem como pela guarda e sigilo de suas credenciais de acesso (login e senha).<br>
+            Toda ação executada dentro da plataforma por meio das credenciais de um operador será presumida como de sua autoria.<br>
+            É estritamente proibido utilizar o sistema para fins ilícitos, tentar burlar mecanismos de autenticação, realizar engenharia reversa, compartilhar acessos individuais não autorizados ou comprometer a estabilidade da infraestrutura.</p>
 
-            <h4 style="font-size: 13.5px; margin-bottom: 6px; color: var(--primary);">5. Auditoria e Registro de Consentimento</h4>
-            <p style="margin-bottom: 0;">
-                A data e o horário exatos do aceite destes termos são gravados eletronicamente no banco de dados (<code>dataAceiteTermos</code>) para fins de conformidade legal e auditoria.
-            </p>
+            <p><strong>3. Planos, Assinatura, Upgrade e Cancelamento</strong><br>
+            O acesso à plataforma é disponibilizado por meio dos planos <strong>Essencial</strong>, <strong>Padrão</strong> e <strong>Premium</strong>, cujos limites de recursos, operadores e funcionalidades são detalhados na página de contratação.<br>
+            <strong>Sem fidelidade:</strong> Nenhum dos planos possui cláusula de fidelidade ou multa rescisória.<br>
+            <strong>Alteração de plano:</strong> O usuário pode realizar o upgrade ou downgrade entre os planos a qualquer momento, com ajuste proporcional ou aplicação no ciclo de faturamento seguinte, conforme a regra vigente no painel financeiro.<br>
+            <strong>Cancelamento:</strong> O cancelamento pode ser efetuado a qualquer momento pelo próprio usuário, interrompendo cobranças futuras a partir do próximo ciclo.</p>
+
+            <p><strong>4. Propriedade Intelectual</strong><br>
+            Todo o código-fonte, arquitetura, interface, marca, logotipos e funcionalidades do MVM Gestão de Estoque são de propriedade exclusiva de seus desenvolvedores. A assinatura concede apenas uma licença de uso revogável, não exclusiva e intransferível. Todos os dados, cadastros e relatórios inseridos pelo usuário permanecem de propriedade exclusiva do respectivo usuário.</p>
+
+            <p><strong>5. Limitação de Responsabilidade e Disponibilidade</strong><br>
+            Empregamos boas práticas de hospedagem e segurança para manter a alta disponibilidade do serviço, mas não garantimos operação ininterrupta em casos de manutenção programada, falhas de conexão do usuário ou instabilidades em provedores externos de nuvem.<br>
+            O MVM Gestão de Estoque é uma ferramenta de apoio operacional e não substitui sistemas fiscais ou contábeis oficiais, não se responsabilizando por prejuízos financeiros, divergências de inventário ou perdas comerciais decorrentes de lançamentos incorretos, exclusões acidentais ou falhas operacionais cometidas pelos próprios operadores da conta.</p>
+
+            <h4 style="font-size: 13.5px; margin: 16px 0 6px; color: var(--primary);">Parte II — Segurança e Política de Privacidade (LGPD)</h4>
+
+            <p><strong>6. Papéis no Tratamento de Dados (Controlador vs. Operador)</strong><br>
+            <strong>Dados da Conta e Assinatura (Controlador):</strong> Em relação aos dados cadastrais e financeiros do próprio assinante e de seus operadores (nome, e-mail, credenciais de acesso e dados de cobrança), a MVM Gestão de Estoque atua como Controladora.<br>
+            <strong>Dados Operacionais de Terceiros (Operadora):</strong> Em relação aos dados de clientes, fornecedores, produtos e movimentações inseridos pelos usuários dentro de seus respectivos ambientes isolados, o usuário assinante atua como Controlador e a MVM Gestão de Estoque atua exclusivamente como Operadora, processando tais informações estritamente para executar as rotinas de inventário e emissão de recibos contratadas.</p>
+
+            <p><strong>7. Dados Coletados e Finalidades</strong><br>
+            Coletamos apenas os dados estritamente necessários para a operação segura do sistema:</p>
+            <table style="width: 100%; border-collapse: collapse; margin: 8px 0 12px; font-size: 11.8px; background: var(--card);">
+                <thead>
+                    <tr style="background: var(--bg-subtle); color: var(--text);">
+                        <th style="padding: 8px; border: 1px solid var(--border); text-align: left;">Categoria de Dados</th>
+                        <th style="padding: 8px; border: 1px solid var(--border); text-align: left;">Exemplos de Informações</th>
+                        <th style="padding: 8px; border: 1px solid var(--border); text-align: left;">Finalidade e Base Legal (LGPD)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid var(--border); font-weight: 700;">Cadastro e Operadores</td>
+                        <td style="padding: 8px; border: 1px solid var(--border);">Nome completo, e-mail, telefone, perfil de permissão e senha (armazenada em formato criptografado/hash).</td>
+                        <td style="padding: 8px; border: 1px solid var(--border);">Criação de conta, autenticação segura e controle de acesso (Execução de contrato — Art. 7º, V).</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid var(--border); font-weight: 700;">Operacionais (Inventário)</td>
+                        <td style="padding: 8px; border: 1px solid var(--border);">Cadastros de clientes e fornecedores (nome/razão social, CPF/CNPJ, contato), entradas/saídas de estoque e recibos emitidos.</td>
+                        <td style="padding: 8px; border: 1px solid var(--border);">Execução das rotinas de inventário e emissão de recibos (Execução de contrato — Art. 7º, V).</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid var(--border); font-weight: 700;">Assinatura e Cobrança</td>
+                        <td style="padding: 8px; border: 1px solid var(--border);">Plano contratado (Essencial, Padrão ou Premium), histórico de faturas e status de pagamento (processados via gateway seguro; não armazenamos dados completos de cartão).</td>
+                        <td style="padding: 8px; border: 1px solid var(--border);">Gestão financeira e obrigações fiscais (Execução de contrato e obrigação legal — Art. 7º, II e V).</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid var(--border); font-weight: 700;">Auditoria e Segurança</td>
+                        <td style="padding: 8px; border: 1px solid var(--border);">Registros de movimentação Kardex (data, hora, item alterado e operador), endereço IP e tokens de sessão/CSRF.</td>
+                        <td style="padding: 8px; border: 1px solid var(--border);">Rastreabilidade do estoque, prevenção a fraudes e guarda legal (Legítimo interesse e obrigação legal — Art. 7º, II e IX).</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p><strong>8. Isolamento de Ambiente e Segurança da Informação</strong><br>
+            A plataforma adota arquitetura multi-tenant com medidas técnicas rigorosas de proteção:<br>
+            <strong>Isolamento Lógico:</strong> Cada conta/organização opera em ambiente logicamente isolado, impedindo que outros usuários da plataforma visualizem ou acessem seus registros.<br>
+            <strong>Criptografia e Proteção de Sessão:</strong> As senhas são armazenadas com criptografia irreversível (hash), as comunicações são cifradas via HTTPS/TLS e as requisições são protegidas contra ataques de falsificação por meio de tokens CSRF (Cross-Site Request Forgery).<br>
+            <strong>Auditoria Kardex:</strong> Todas as movimentações críticas de estoque geram histórico imutável de auditoria para rastreabilidade operacional do próprio assinante.</p>
+
+            <p><strong>9. Compartilhamento de Dados e Cookies</strong><br>
+            <strong>Sem comercialização:</strong> A MVM Gestão de Estoque não vende, aluga ou comercializa dados pessoais ou empresariais sob nenhuma hipótese. O compartilhamento ocorre apenas com provedores essenciais de infraestrutura em nuvem, gateways de pagamento (para processar os planos) ou mediante requisição legal/judicial.<br>
+            <strong>Cookies:</strong> Utilizamos apenas cookies e armazenamento local estritamente necessários para manter a sessão autenticada do operador e validar tokens de segurança (CSRF), sem rastreamento publicitário de terceiros.</p>
+
+            <p><strong>10. Retenção, Exclusão e Direitos dos Titulares (Art. 18 da LGPD)</strong><br>
+            O usuário pode solicitar a qualquer momento a confirmação de tratamento, acesso, correção (disponível no próprio painel), exportação/portabilidade ou eliminação de seus dados cadastrais.<br>
+            Após o cancelamento da assinatura, recomenda-se a exportação prévia dos relatórios. Os dados operacionais serão excluídos ou anonimizados após o encerramento definitivo da conta, ressalvados os registros mínimos de acesso (logs) mantidos pelo prazo legal de 6 meses conforme o Art. 15 do Marco Civil da Internet e obrigações fiscais aplicáveis.<br>
+            Solicitações de exclusão feitas por clientes ou fornecedores cadastrados por um assinante devem ser tratadas diretamente pelo próprio assinante (Controlador) dentro do sistema.</p>
+
+            <h4 style="font-size: 13.5px; margin: 16px 0 6px; color: var(--primary);">Parte III — Disposições Gerais e Foro</h4>
+
+            <p style="margin-bottom: 0;"><strong>11. Atualizações, Contato (DPO) e Foro</strong><br>
+            Este documento poderá ser atualizado periodicamente para refletir melhorias técnicas ou adequações legais, sendo as alterações relevantes comunicadas na plataforma. Dúvidas ou solicitações relacionadas à privacidade e à LGPD podem ser enviadas ao Encarregado pelo Tratamento de Dados (DPO) através do canal oficial de suporte indicado no rodapé do sistema. Fica eleito o foro da comarca de domicílio do responsável pela plataforma no Brasil para dirimir quaisquer controvérsias oriundas deste instrumento.</p>
         </div>
 
         <div class="confirm-dialog-actions">
