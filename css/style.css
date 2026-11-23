@@ -1360,3 +1360,134 @@ input[type="file"]::file-selector-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
 }
+
+/* =========================================================
+   MODAL GLOBAL DE CONFIRMAÇÃO E ALERTA (MVM DIALOG)
+   ========================================================= */
+.mvm-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.mvm-dialog-backdrop.is-open {
+  opacity: 1;
+}
+
+.mvm-dialog-box {
+  width: 100%;
+  max-width: 420px;
+  background: var(--card, #ffffff);
+  color: var(--text, #0f172a);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 16px;
+  padding: 26px 24px 22px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  transform: translateY(10px) scale(0.96);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: center;
+}
+
+.mvm-dialog-backdrop.is-open .mvm-dialog-box {
+  transform: translateY(0) scale(1);
+}
+
+.mvm-dialog-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  background: rgba(99, 102, 241, 0.14);
+  border: 1px solid rgba(99, 102, 241, 0.28);
+}
+
+.mvm-dialog-icon.is-warning {
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.mvm-dialog-icon.is-danger {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.mvm-dialog-icon.is-success {
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.mvm-dialog-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text, #0f172a);
+}
+
+.mvm-dialog-msg {
+  margin: 0 0 22px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-muted, #64748b);
+}
+
+.mvm-dialog-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.mvm-dialog-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.16s ease;
+}
+
+.mvm-dialog-btn-cancel {
+  background: var(--bg-subtle, #f1f5f9);
+  color: var(--text, #334155);
+  border-color: var(--border, #cbd5e1);
+}
+
+.mvm-dialog-btn-cancel:hover {
+  background: var(--border, #e2e8f0);
+}
+
+.mvm-dialog-btn-confirm {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+}
+
+.mvm-dialog-btn-confirm:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.mvm-dialog-btn-confirm.is-danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+}
+
+.mvm-dialog-btn-confirm.is-warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+}

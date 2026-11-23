@@ -242,4 +242,138 @@ document.addEventListener('DOMContentLoaded', function () {
             input.dispatchEvent(new Event('input'));
         }
     });
+
+    // 5. Modal Global Estilizado (substitui confirm() e alert() nativos do navegador)
+    function inferirDialogMeta(mensagem, isConfirm) {
+        const txt = String(mensagem || '').toLowerCase();
+        if (txt.includes('desconto') || txt.includes('promo')) {
+            return { icone: '🔥', titulo: 'Aplicar Ação Promocional', tipo: 'warning', btnOk: 'Aplicar Desconto' };
+        }
+        if (txt.includes('devolu') || txt.includes('estorno') || txt.includes('exclu') || txt.includes('remover') || txt.includes('apagar')) {
+            return { icone: '⚠️', titulo: 'Confirmar Ação', tipo: 'danger', btnOk: 'Confirmar' };
+        }
+        if (txt.includes('e-mail') || txt.includes('email') || txt.includes('relatório')) {
+            return { icone: '📧', titulo: 'Enviar Relatório', tipo: 'info', btnOk: 'Enviar Agora' };
+        }
+        return {
+            icone: isConfirm ? '✨' : 'ℹ️',
+            titulo: isConfirm ? 'Confirmar Operação' : 'Aviso do Sistema',
+            tipo: 'info',
+            btnOk: isConfirm ? 'Confirmar' : 'Entendi'
+        };
+    }
+
+    function abrirMvmDialog(opts) {
+        return new Promise((resolve) => {
+            const anterior = document.querySelector('.mvm-dialog-backdrop');
+            if (anterior) anterior.remove();
+
+            const isConfirm = Boolean(opts.isConfirm);
+            const meta = inferirDialogMeta(opts.mensagem, isConfirm);
+            const icone = opts.icone || meta.icone;
+            const titulo = opts.titulo || meta.titulo;
+            const tipo = opts.tipo || meta.tipo;
+            const textoConfirmar = opts.textoConfirmar || meta.btnOk;
+            const textoCancelar = opts.textoCancelar || 'Cancelar';
+
+            const backdrop = document.createElement('div');
+            backdrop.className = 'mvm-dialog-backdrop';
+            backdrop.setAttribute('role', 'dialog');
+            backdrop.setAttribute('aria-modal', 'true');
+
+            const box = document.createElement('div');
+            box.className = 'mvm-dialog-box';
+
+            const iconEl = document.createElement('div');
+            iconEl.className = 'mvm-dialog-icon' + (tipo !== 'info' ? ' is-' + tipo : '');
+            iconEl.textContent = icone;
+
+            const titleEl = document.createElement('h3');
+            titleEl.className = 'mvm-dialog-title';
+            titleEl.textContent = titulo;
+
+            const msgEl = document.createElement('p');
+            msgEl.className = 'mvm-dialog-msg';
+            msgEl.textContent = String(opts.mensagem || '');
+
+            const actionsEl = document.createElement('div');
+            actionsEl.className = 'mvm-dialog-actions';
+
+            let btnCancel = null;
+            if (isConfirm) {
+                btnCancel = document.createElement('button');
+                btnCancel.type = 'button';
+                btnCancel.className = 'mvm-dialog-btn mvm-dialog-btn-cancel';
+                btnCancel.textContent = textoCancelar;
+                actionsEl.appendChild(btnCancel);
+            }
+
+            const btnOk = document.createElement('button');
+            btnOk.type = 'button';
+            btnOk.className = 'mvm-dialog-btn mvm-dialog-btn-confirm' + (tipo === 'danger' || tipo === 'warning' ? ' is-' + tipo : '');
+            btnOk.textContent = textoConfirmar;
+            actionsEl.appendChild(btnOk);
+
+            box.appendChild(iconEl);
+            box.appendChild(titleEl);
+            box.appendChild(msgEl);
+            box.appendChild(actionsEl);
+            backdrop.appendChild(box);
+            document.body.appendChild(backdrop);
+
+            requestAnimationFrame(() => backdrop.classList.add('is-open'));
+            setTimeout(() => btnOk.focus(), 40);
+
+            const fechar = (resultado) => {
+                document.removeEventListener('keydown', onKey);
+                backdrop.classList.remove('is-open');
+                setTimeout(() => {
+                    if (backdrop.parentNode) backdrop.remove();
+                    resolve(resultado);
+                }, 160);
+            };
+
+            const onKey = (e) => {
+                if (e.key === 'Escape') fechar(false);
+            };
+            document.addEventListener('keydown', onKey);
+
+            backdrop.addEventListener('click', (e) => {
+                if (e.target === backdrop) fechar(false);
+            });
+            if (btnCancel) btnCancel.addEventListener('click', () => fechar(false));
+            btnOk.addEventListener('click', () => fechar(true));
+        });
+    }
+
+    window.mvmConfirm = function (mensagem, opts = {}) {
+        return abrirMvmDialog({ ...opts, mensagem, isConfirm: true });
+    };
+
+    window.mvmAlert = function (mensagem, opts = {}) {
+        return abrirMvmDialog({ ...opts, mensagem, isConfirm: false });
+    };
+
+    // Substitui alert() nativo pelo modal bonito
+    window.alert = function (mensagem) {
+        window.mvmAlert(mensagem);
+    };
+
+    // Intercepta automaticamente formulários com onsubmit="return confirm('...')"
+    document.querySelectorAll('form[onsubmit]').forEach(form => {
+        const attr = form.getAttribute('onsubmit') || '';
+        const match = attr.match(/confirm\s*\(\s*(['"`])([\s\S]*?)\1\s*\)/);
+        if (!match) return;
+        const mensagem = match[2];
+        form.removeAttribute('onsubmit');
+        form.addEventListener('submit', async function (e) {
+            if (form.dataset.mvmConfirmed === '1') return;
+            e.preventDefault();
+            const ok = await window.mvmConfirm(mensagem);
+            if (ok) {
+                form.dataset.mvmConfirmed = '1';
+                form.submit();
+            }
+        });
+    });
 });
