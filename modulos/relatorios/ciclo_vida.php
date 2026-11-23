@@ -37,6 +37,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'aplicar
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'importar_sugestao') {
+    if (validarTokenCSRF() && is_object($conexao)) {
+        $nome = trim($_POST['nome'] ?? '');
+        if ($nome !== '') {
+            $cat = trim($_POST['categoria'] ?? 'Geral');
+            $ean = trim($_POST['ean'] ?? '');
+            $preco = (float)($_POST['preco'] ?? 49.90);
+            $custo = (float)($_POST['precoCusto'] ?? round($preco * 0.62, 2));
+            $stmtIns = mysqli_prepare($conexao, "INSERT INTO produto (idUsuario, codigoBarras, nomeProduto, categoria, preco, precoCusto, quantidade, estoqueMinimo, localizacao, descricao) VALUES (?, ?, ?, ?, ?, ?, 10, 5, 'A-01-01', 'Produto importado via Sugestão Inteligente de Mercado MVM.')");
+            mysqli_stmt_bind_param($stmtIns, "isssdd", $idUsuario, $ean, $nome, $cat, $preco, $custo);
+            mysqli_stmt_execute($stmtIns);
+            $_SESSION['flash_plm'] = [
+                'tipo' => 'sucesso',
+                'texto' => "🚀 Produto <strong>" . htmlspecialchars($nome) . "</strong> importado para o seu catálogo com sucesso!"
+            ];
+        }
+    }
+    if (is_object($conexao)) mysqli_close($conexao);
+    header('Location: ciclo_vida.php');
+    exit;
+}
+
 $produtos = [];
 $movimentosPorProd = [];
 if (is_object($conexao)) {
@@ -264,10 +286,69 @@ require_once __DIR__ . "/../../templates/header.php";
             </table>
         </div>
     </div>
+
+    <div class="pbi-visual-card" style="margin-top: 26px;">
+        <div class="pbi-visual-header" style="border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div class="pbi-visual-title-box">
+                <h3><span>🌐</span> Sugestões de Produtos da Internet para Aumentar seu Faturamento</h3>
+                <p id="plm-sugestoes-sub">Analisando seu perfil comercial e buscando oportunidades reais na web...</p>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <input type="text" id="input-nicho-plm" placeholder="Ex: bebidas, informatica, cosmeticos..." style="padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-subtle); color:var(--text); font-size:12.5px;">
+                <button type="button" onclick="carregarSugestoesWeb()" class="btn-primary" style="padding:8px 14px; font-size:12.5px;">🔍 Buscar na Internet</button>
+            </div>
+        </div>
+        <div id="grid-sugestoes-web" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap:16px;">
+            <div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--text-muted);">⏳ Buscando produtos compatíveis com o seu perfil na internet...</div>
+        </div>
+    </div>
 </div>
 
 <script>
+async function carregarSugestoesWeb() {
+    const grid = document.getElementById('grid-sugestoes-web');
+    const sub = document.getElementById('plm-sugestoes-sub');
+    const nicho = (document.getElementById('input-nicho-plm').value || '').trim();
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--text-muted);">⏳ Pesquisando produtos na internet para o seu perfil...</div>';
+    try {
+        const resp = await fetch('<?= url('api/sugestoes_produtos.php') ?>' + (nicho ? '?nicho=' + encodeURIComponent(nicho) : ''));
+        const data = await resp.json();
+        if (!data.sucesso || !data.sugestoes || data.sugestoes.length === 0) {
+            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:var(--text-muted);">Nenhuma sugestão encontrada. Tente outro termo acima.</div>';
+            return;
+        }
+        sub.innerHTML = 'Perfil detectado: <strong>' + data.perfil_nicho + '</strong> &bull; Fonte: <strong>' + data.fonte + '</strong>';
+        grid.innerHTML = data.sugestoes.map(s => {
+            const imgHtml = s.imagem
+                ? '<img src="' + s.imagem + '" alt="" style="width:58px;height:58px;object-fit:contain;border-radius:8px;background:#fff;padding:4px;border:1px solid var(--border);flex-shrink:0;">'
+                : '<div style="width:58px;height:58px;border-radius:8px;background:var(--bg-subtle);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🚀</div>';
+            return '<div style="background:var(--bg-subtle);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;gap:12px;">'
+                + '<div style="display:flex;gap:12px;align-items:flex-start;">' + imgHtml
+                + '<div><strong style="font-size:13.5px;color:var(--text);display:block;line-height:1.35;">' + s.nome + '</strong>'
+                + '<span style="font-size:11px;color:#10b981;font-weight:700;display:block;margin-top:4px;">💡 ' + s.motivo + '</span></div></div>'
+                + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--card);padding:10px;border-radius:8px;border:1px solid var(--border);font-size:12px;">'
+                + '<div><span style="color:var(--text-muted);display:block;font-size:10.5px;">Preço Sugerido</span><strong style="color:var(--primary);font-size:14px;">R$ ' + Number(s.preco).toFixed(2).replace('.', ',') + '</strong></div>'
+                + '<div><span style="color:var(--text-muted);display:block;font-size:10.5px;">Potencial Extra/Mês</span><strong style="color:#10b981;font-size:14px;">+R$ ' + Number(s.potencialMes).toFixed(2).replace('.', ',') + '</strong></div>'
+                + '</div>'
+                + '<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;">'
+                + '<a href="' + s.link + '" target="_blank" rel="noopener noreferrer" style="font-size:11.5px;color:var(--text-muted);text-decoration:underline;">Ver na web ↗</a>'
+                + '<form action="ciclo_vida.php" method="POST" style="margin:0;">'
+                + '<?= campoCSRF() ?>'
+                + '<input type="hidden" name="acao" value="importar_sugestao">'
+                + '<input type="hidden" name="nome" value="' + s.nome.replace(/"/g, '&quot;') + '">'
+                + '<input type="hidden" name="categoria" value="' + (s.categoria || 'Geral').replace(/"/g, '&quot;') + '">'
+                + '<input type="hidden" name="ean" value="' + (s.ean || '') + '">'
+                + '<input type="hidden" name="preco" value="' + s.preco + '">'
+                + '<input type="hidden" name="precoCusto" value="' + s.precoCusto + '">'
+                + '<button type="submit" class="btn-primary" style="padding:7px 12px;font-size:11.5px;">➕ Importar para Catálogo</button>'
+                + '</form></div></div>';
+        }).join('');
+    } catch (e) {
+        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:#ef4444;">Erro ao consultar sugestões na internet.</div>';
+    }
+}
 document.addEventListener('DOMContentLoaded', function() {
+    carregarSugestoesWeb();
     if (window.ApexCharts && document.querySelector('#chart-plm-fases')) {
         new ApexCharts(document.querySelector('#chart-plm-fases'), {
             chart: { type: 'donut', height: 250 },

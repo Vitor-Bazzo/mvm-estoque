@@ -32,7 +32,8 @@ const {
 const {
   handleExportacao,
   handleConsultaEan,
-  handleDispararAlerta
+  handleDispararAlerta,
+  handleSugestoesProdutos
 } = require('../lib/mvm_exports');
 
 let staticAssets = {};
@@ -169,6 +170,8 @@ module.exports = async (req, res) => {
     result = handleApiDocs(req, db, session);
   } else if (basename === 'consulta_ean.php') {
     result = await handleConsultaEan(query, session);
+  } else if (basename === 'sugestoes_produtos.php') {
+    result = await handleSugestoesProdutos(query, db, session);
   } else if (basename === 'disparar_alerta.php') {
     result = handleDispararAlerta(body, db, session);
   } else if (basename === 'estoque.php') {
