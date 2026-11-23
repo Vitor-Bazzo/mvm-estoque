@@ -331,7 +331,7 @@ async function carregarSugestoesWeb() {
                 + '<div><span style="color:var(--text-muted);display:block;font-size:10.5px;">Potencial Extra/Mês</span><strong style="color:#10b981;font-size:14px;">+R$ ' + Number(s.potencialMes).toFixed(2).replace('.', ',') + '</strong></div>'
                 + '</div>'
                 + '<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;">'
-                + '<a href="' + s.link + '" target="_blank" rel="noopener noreferrer" style="font-size:11.5px;color:var(--text-muted);text-decoration:underline;">Ver na web ↗</a>'
+                + '<a href="' + s.link + '" target="_blank" rel="noopener noreferrer" style="font-size:11.5px;color:#eab308;font-weight:700;text-decoration:none;">🛒 Ver no Mercado Livre ↗</a>'
                 + '<form action="ciclo_vida.php" method="POST" style="margin:0;">'
                 + '<?= campoCSRF() ?>'
                 + '<input type="hidden" name="acao" value="importar_sugestao">'
