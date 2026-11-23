@@ -100,6 +100,10 @@ $paginaAtual = basename($_SERVER['PHP_SELF']);
                     <span class="nav-icon">🏷️</span>
                     <span class="nav-text">Etiquetas &amp; Barras</span>
                 </a>
+                <a href="<?= url('modulos/relatorios/ciclo_vida.php') ?>" class="<?= $paginaAtual === 'ciclo_vida.php' ? 'active' : '' ?>">
+                    <span class="nav-icon">♻️</span>
+                    <span class="nav-text">Ciclo de Vida (PLM)</span>
+                </a>
 
                 <span class="nav-label">Contatos</span>
                 <a href="<?= url('modulos/clientes/cliente.php') ?>" class="<?= in_array($paginaAtual, ['cliente.php', 'cliente_editar.php']) ? 'active' : '' ?>">

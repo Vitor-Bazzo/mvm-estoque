@@ -51,6 +51,7 @@ Options -Indexes
     # Módulos: Relatórios e Planos
     RewriteRule ^kardex\.php$ modulos/relatorios/kardex.php [L,QSA]
     RewriteRule ^etiquetas\.php$ modulos/relatorios/etiquetas.php [L,QSA]
+    RewriteRule ^ciclo_vida\.php$ modulos/relatorios/ciclo_vida.php [L,QSA]
     RewriteRule ^planos\.php$ modulos/planos/planos.php [L,QSA]
 
     # Módulos: Autenticação

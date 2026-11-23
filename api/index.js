@@ -24,6 +24,7 @@ const {
   handleMovimentos,
   handleKardex,
   handleEtiquetas,
+  handleCicloVida,
   handleMascote,
   handleApiRest,
   handleApiDocs
@@ -160,6 +161,8 @@ module.exports = async (req, res) => {
     result = await handleKardex(req, query, db, session);
   } else if (basename === 'etiquetas.php' || basename === 'etiquetas') {
     result = await handleEtiquetas(req, db, session);
+  } else if (basename === 'ciclo_vida.php' || basename === 'ciclo_vida') {
+    result = await handleCicloVida(req, body, query, db, session);
   } else if (basename === 'mascote.php' || basename === 'mascote') {
     result = handleMascote(session);
   } else if (basename === 'api_docs.php') {
