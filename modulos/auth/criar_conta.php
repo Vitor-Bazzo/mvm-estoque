@@ -123,9 +123,9 @@ require_once __DIR__ . "/../../templates/header.php";
             <div class="form-group">
                 <label for="plano">Plano de Assinatura MVM *</label>
                 <select id="plano" name="plano" required>
-                    <option value="ESSENCIAL" <?= $planoGet === 'ESSENCIAL' ? 'selected' : '' ?>>📦 Essencial (R$ 29,90/mês) — Até 100 produtos</option>
-                    <option value="PADRAO" <?= $planoGet === 'PADRAO' ? 'selected' : '' ?>>⭐ Padrão (R$ 59,90/mês) — Até 1.000 produtos + Kardex &amp; FEFO</option>
-                    <option value="PREMIUM" <?= $planoGet === 'PREMIUM' ? 'selected' : '' ?>>👑 Premium (R$ 99,90/mês) — Ilimitado + Power BI &amp; WMS</option>
+                    <option value="ESSENCIAL" <?= $planoGet === 'ESSENCIAL' ? 'selected' : '' ?>>📦 Essencial (R$ 89,90/mês) — Pequenas empresas • Até 100 produtos</option>
+                    <option value="PADRAO" <?= $planoGet === 'PADRAO' ? 'selected' : '' ?>>⭐ Padrão (R$ 199,90/mês) — Médias empresas • Até 1.000 produtos + Kardex &amp; FEFO</option>
+                    <option value="PREMIUM" <?= $planoGet === 'PREMIUM' ? 'selected' : '' ?>>👑 Premium (R$ 449,90/mês) — Grandes empresas • Ilimitado + Power BI &amp; WMS</option>
                 </select>
             </div>
 

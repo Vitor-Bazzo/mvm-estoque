@@ -434,18 +434,18 @@ require_once __DIR__ . "/../../templates/header.php";
         <div class="plan-card <?= ($idUsuario > 0 && $planoAtual === 'ESSENCIAL') ? 'is-current' : '' ?>">
             <div>
                 <div class="plan-banner banner-essencial">
-                    <span class="plan-ribbon">Básico • 720p</span>
+                    <span class="plan-ribbon">Pequenas Empresas • 720p</span>
                     <h3>📦 Essencial</h3>
-                    <span class="plan-res">Para MEI e pequenos comércios iniciando o controle</span>
+                    <span class="plan-res">Para pequenas empresas e comércios iniciando o controle</span>
                 </div>
                 <div class="plan-body">
                     <div class="plan-price-box">
                         <div class="plan-price-row">
                             <span class="plan-currency">R$</span>
-                            <span class="plan-amount" data-mensal="29,90" data-anual="23,90">29,90</span>
+                            <span class="plan-amount" data-mensal="89,90" data-anual="71,90">89,90</span>
                             <span class="plan-period">/mês</span>
                         </div>
-                        <div class="plan-annual-note" data-note-mensal="Faturado mensalmente sem fidelidade" data-note-anual="R$ 286,80/ano (Economia de R$ 72,00)">
+                        <div class="plan-annual-note" data-note-mensal="Faturado mensalmente sem fidelidade" data-note-anual="R$ 862,80/ano (Economia de R$ 216,00)">
                             Faturado mensalmente sem fidelidade
                         </div>
                     </div>
@@ -465,7 +465,7 @@ require_once __DIR__ . "/../../templates/header.php";
                 <?php if ($idUsuario > 0 && $planoAtual === 'ESSENCIAL'): ?>
                     <button type="button" class="btn-plan-select btn-plan-current" disabled>✓ Seu Plano Atual</button>
                 <?php elseif ($idUsuario > 0): ?>
-                    <button type="button" class="btn-plan-select btn-plan-essencial" onclick="abrirCheckoutPlano('ESSENCIAL', 'Essencial', '29,90', '23,90')">
+                    <button type="button" class="btn-plan-select btn-plan-essencial" onclick="abrirCheckoutPlano('ESSENCIAL', 'Essencial', '89,90', '71,90')">
                         Mudar para Essencial
                     </button>
                 <?php else: ?>
@@ -480,18 +480,18 @@ require_once __DIR__ . "/../../templates/header.php";
         <div class="plan-card popular <?= ($idUsuario > 0 && $planoAtual === 'PADRAO') ? 'is-current' : '' ?>">
             <div>
                 <div class="plan-banner banner-padrao">
-                    <span class="plan-ribbon">🔥 Mais Popular • Full HD</span>
+                    <span class="plan-ribbon">🔥 Médias Empresas • Full HD</span>
                     <h3>⭐ Padrão Comercial</h3>
-                    <span class="plan-res">Para lojas, mercados e distribuidoras em expansão</span>
+                    <span class="plan-res">Para médias empresas, lojas e distribuidoras em expansão</span>
                 </div>
                 <div class="plan-body">
                     <div class="plan-price-box">
                         <div class="plan-price-row">
                             <span class="plan-currency">R$</span>
-                            <span class="plan-amount" data-mensal="59,90" data-anual="47,90">59,90</span>
+                            <span class="plan-amount" data-mensal="199,90" data-anual="159,90">199,90</span>
                             <span class="plan-period">/mês</span>
                         </div>
-                        <div class="plan-annual-note" data-note-mensal="Faturado mensalmente sem fidelidade" data-note-anual="R$ 574,80/ano (Economia de R$ 144,00)">
+                        <div class="plan-annual-note" data-note-mensal="Faturado mensalmente sem fidelidade" data-note-anual="R$ 1.918,80/ano (Economia de R$ 480,00)">
                             Faturado mensalmente sem fidelidade
                         </div>
                     </div>
@@ -511,7 +511,7 @@ require_once __DIR__ . "/../../templates/header.php";
                 <?php if ($idUsuario > 0 && $planoAtual === 'PADRAO'): ?>
                     <button type="button" class="btn-plan-select btn-plan-current" disabled>✓ Seu Plano Atual</button>
                 <?php elseif ($idUsuario > 0): ?>
-                    <button type="button" class="btn-plan-select btn-plan-padrao" onclick="abrirCheckoutPlano('PADRAO', 'Padrão Comercial', '59,90', '47,90')">
+                    <button type="button" class="btn-plan-select btn-plan-padrao" onclick="abrirCheckoutPlano('PADRAO', 'Padrão Comercial', '199,90', '159,90')">
                         <span>⚡</span> Assinar Plano Padrão
                     </button>
                 <?php else: ?>
@@ -526,18 +526,18 @@ require_once __DIR__ . "/../../templates/header.php";
         <div class="plan-card premium-tier <?= ($idUsuario > 0 && $planoAtual === 'PREMIUM') ? 'is-current' : '' ?>">
             <div>
                 <div class="plan-banner banner-premium">
-                    <span class="plan-ribbon">👑 Ultra 4K • BI + WMS</span>
+                    <span class="plan-ribbon">👑 Grandes Empresas • BI + WMS</span>
                     <h3>👑 Premium Enterprise</h3>
-                    <span class="plan-res">Poder total: BI Executivo, WMS de Galpão e API</span>
+                    <span class="plan-res">Para grandes empresas: BI Executivo, WMS de Galpão e API</span>
                 </div>
                 <div class="plan-body">
                     <div class="plan-price-box">
                         <div class="plan-price-row">
                             <span class="plan-currency">R$</span>
-                            <span class="plan-amount" data-mensal="99,90" data-anual="79,90">99,90</span>
+                            <span class="plan-amount" data-mensal="449,90" data-anual="359,90">449,90</span>
                             <span class="plan-period">/mês</span>
                         </div>
-                        <div class="plan-annual-note" data-note-mensal="Faturado mensalmente sem fidelidade" data-note-anual="R$ 958,80/ano (Economia de R$ 240,00)">
+                        <div class="plan-annual-note" data-note-mensal="Faturado mensalmente sem fidelidade" data-note-anual="R$ 4.318,80/ano (Economia de R$ 1.080,00)">
                             Faturado mensalmente sem fidelidade
                         </div>
                     </div>
@@ -557,7 +557,7 @@ require_once __DIR__ . "/../../templates/header.php";
                 <?php if ($idUsuario > 0 && $planoAtual === 'PREMIUM'): ?>
                     <button type="button" class="btn-plan-select btn-plan-current" disabled>👑 Seu Plano Atual (Máximo)</button>
                 <?php elseif ($idUsuario > 0): ?>
-                    <button type="button" class="btn-plan-select btn-plan-premium" onclick="abrirCheckoutPlano('PREMIUM', 'Premium Enterprise', '99,90', '79,90')">
+                    <button type="button" class="btn-plan-select btn-plan-premium" onclick="abrirCheckoutPlano('PREMIUM', 'Premium Enterprise', '449,90', '359,90')">
                         <span>👑</span> Fazer Upgrade para Premium
                     </button>
                 <?php else: ?>
@@ -672,7 +672,7 @@ require_once __DIR__ . "/../../templates/header.php";
                     <div id="checkout-ciclo-label" style="font-size: 11.5px; color: #10b981; font-weight: 700;">Ciclo Mensal</div>
                 </div>
                 <div style="text-align: right;">
-                    <strong id="checkout-valor-plano" style="font-size: 22px; font-weight: 900; color: var(--primary);">R$ 99,90</strong>
+                    <strong id="checkout-valor-plano" style="font-size: 22px; font-weight: 900; color: var(--primary);">R$ 449,90</strong>
                     <div style="font-size: 11px; color: var(--text-muted);">/mês</div>
                 </div>
             </div>
